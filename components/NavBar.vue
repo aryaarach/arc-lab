@@ -9,7 +9,7 @@ const navItems = [
   { label: 'Mixer 3D', href: '#mixer' },
   { label: 'Transformasi', href: '#transformasi' },
   { label: 'Alur Kerja', href: '#alur' },
-  { label: 'Kalkulator', href: '#kalkulator' },
+  { label: 'Harga', href: '#harga' },
   { label: 'FAQ', href: '#faq' }
 ]
 

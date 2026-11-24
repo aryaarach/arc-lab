@@ -397,6 +397,12 @@ onMounted(async () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   renderer.setSize(initSz.width, initSz.height)
   renderer.outputColorSpace = THREE.SRGBColorSpace
+  renderer.domElement.setAttribute('role', 'img')
+  renderer.domElement.setAttribute(
+    'aria-label',
+    'Kanvas 3D Brand Mixer untuk memutar pratinjau kemasan kotak, kaleng, atau cangkir'
+  )
+  renderer.domElement.style.touchAction = 'pan-y'
   el.appendChild(renderer.domElement)
 
   const scene = new THREE.Scene()
@@ -735,6 +741,7 @@ onMounted(async () => {
     ;(shadowPlane.material as import('three').MeshBasicMaterial).dispose()
     shadowTex.dispose()
     renderer.dispose()
+    renderer.forceContextLoss()
     if (renderer.domElement.parentNode === el) {
       el.removeChild(renderer.domElement)
     }

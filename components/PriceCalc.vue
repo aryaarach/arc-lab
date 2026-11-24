@@ -136,7 +136,7 @@ const waCalcUrl = computed(() => {
 </script>
 
 <template>
-  <section id="kalkulator" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper">
+  <section id="harga" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper">
     <div class="max-w-7xl mx-auto">
       <div v-reveal class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
         <div>

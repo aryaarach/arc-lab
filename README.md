@@ -1,19 +1,22 @@
-# Arc Lab — Studio Desain Grafis & Kemasan UMKM
+# Arc Lab — Studio Desain Grafis untuk UMKM
 
-Website resmi **Arc Lab** dengan tema **Neo-Brutalist Lab**, dibangun menggunakan **Nuxt 3 (Vue 3 `<script setup>`)**, **Tailwind CSS**, dan **Three.js**. Dirancang ringan, aksesibel, berbahasa Indonesia penuh, dan siap di-deploy ke **Vercel tanpa konfigurasi tambahan (zero-config)**.
+Website produksi **Arc Lab** dengan tema **Neo-Brutalist Lab** (`#F4F1EA` paper, `#0B0B0F` ink, border 2px tegas, dan bayangan solid `6px 6px 0`), dibangun menggunakan **Nuxt 3 (Vue 3 `<script setup>`)**, **Tailwind CSS**, dan **Three.js**. Seluruh antarmuka berbahasa Indonesia dan siap di-deploy ke **Vercel tanpa konfigurasi tambahan (zero-config)**.
 
-## Fitur Interaktif Utama
+## Fitur Utama
 
-1. **HeroScene (Three.js)**: 1.800 partikel interaktif yang menolak kursor dan kembali ke posisi semula, cincin busur parsial (`TorusGeometry`) + ikosahedron wireframe, efek ledakan warna saat diklik, penghentian otomatis render loop saat di luar layar (`IntersectionObserver`), serta gambar fallback statis jika WebGL tidak tersedia atau `prefers-reduced-motion` aktif.
-2. **BrandMixer (Three.js + OrbitControls + CanvasTexture)**: Kustomisasi kemasan 3D interaktif (Box, Kaleng, Cup) dengan input nama brand (maks. 18 karakter), 4 gaya visual (*Minimalis*, *Playful*, *Premium*, *Retro*), 6 pilihan warna, efek pantul saat objek diklik, dan tombol WhatsApp yang otomatis mengisi pilihan pengguna.
-3. **PriceCalc**: Kalkulator 4 layanan dengan animasi angka *eased tween*, harga coret `Rp715.000`, harga spesial **Paket Kombo `Rp499.000`**, serta animasi stempel otomatis ketika keempat layanan dicentang.
-4. **BeforeAfter**: Penggeser perbandingan desain sebelum vs sesudah berbasis *pointer events* (ramah layar sentuh) dan mendukung navigasi tombol panah pada keyboard.
-5. **ProcessTimeline**: Linimasa horizontal `scroll-snap` di perangkat seluler dengan penanda ikon busur (*arc-dot*) yang mengikuti progres gulir.
-6. **ArcCursor & `v-reveal`**: Kursor cincin khusus desktop yang membesar pada elemen interaktif (otomatis disembunyikan di layar sentuh) dan direktif animasi gulir ringan berbasis `IntersectionObserver`.
+1. **HeroScene ("Meja Kerja Lab" — Three.js Toon/Flat)**:
+   - Kolom kiri (SSR LCP instan tanpa menunggu Three.js) menampilkan judul utama dengan kata sorotan bergilir setiap 2,2 detik via CSS murni (`dilirik.`, `diingat.`, `dipercaya.`), tombol **Mulai Proyek** (`#harga`) & **Coba Brand Mixer** (`#mixer`), deretan metrik kepercayaan, dan stiker miring CSS.
+   - Kolom kanan (`<ClientOnly>` + `import('three')` dinamis) menampilkan meja kerja studio bergaya *flat/toon cell-shaded* dengan garis tepi tinta 2px (*inverted-hull*): logo busur 3D di tengah, kotak kemasan koral, kaleng sian, cangkir kuning, primitif dekoratif melayang, dan strip palet 4 warna.
+   - Interaksi penuh: paralaks kursor/sentuhan (~12°), *hover raycast* dengan label objek (`LOGO`, `KEMASAN`, `KALENG`, `CANGKIR`, dll.), klik objek untuk efek pantul *squash-and-stretch* & rotasi warna aksen (atau klik area kosong untuk putaran 360° cincin busur), geser horizontal dengan inersia (`touch-action: pan-y` agar gulir halaman vertikal di ponsel tidak terganggu), tombol keyboard **Ganti warna**, serta fallback otomatis ke `/public/hero-fallback.svg` saat tanpa JS, tanpa WebGL, atau `prefers-reduced-motion` aktif.
+2. **BrandMixer (Three.js + OrbitControls + CanvasTexture)**: Kustomisasi kemasan 3D (Box, Kaleng, Cup) dengan nama brand (maks. 18 karakter), 4 gaya visual (*Minimalis*, *Playful*, *Premium*, *Retro*), 6 warna, efek pantul saat objek diklik, dan tautan WhatsApp otomatis berisi pilihan pengguna.
+3. **PriceCalc (`#harga`)**: Empat pilihan layanan dengan animasi angka *eased count tween*; saat keempatnya dicentang, muncul harga paket **Rp499.000**, harga lama **Rp715.000** dicoret, serta animasi stempel diskon.
+4. **BeforeAfter**: Penggeser perbandingan desain sebelum vs sesudah berbasis *pointer events* yang mendukung layar sentuh dan tombol panah keyboard.
+5. **ProcessTimeline**: Linimasa horizontal `scroll-snap` di ponsel dengan penanda ikon busur (*arc-dot*) yang mengikuti progres gulir.
+6. **ArcCursor & `v-reveal`**: Kursor cincin khusus desktop yang membesar pada elemen interaktif (disembunyikan di perangkat sentuh) serta direktif animasi muncul berbasis `IntersectionObserver`.
 
-## Konfigurasi Kontak terpusat
+## Konfigurasi Kontak Terpusat
 
-Ubah nomor WhatsApp dan akun Instagram studio cukup di satu file [`app.config.ts`](./app.config.ts):
+Nomor WhatsApp dan akun Instagram studio dikelola di satu file [`app.config.ts`](./app.config.ts):
 
 ```ts
 export default defineAppConfig({
@@ -27,37 +30,35 @@ export default defineAppConfig({
 
 ## Menjalankan Proyek Secara Lokal
 
-Pastikan Node.js (versi 18.x atau lebih baru) sudah terpasang, lalu jalankan:
+Pastikan Node.js (versi 18+) sudah terpasang, lalu jalankan:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Buka `http://localhost:3000` di peramban untuk melihat hasilnya.
+Buka `http://localhost:3000` di peramban.
 
-Untuk menguji hasil build produksi secara lokal:
+Untuk menguji build produksi secara lokal:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Cara Deploy ke Vercel (Zero-Config)
-
-Proyek ini tidak menggunakan fitur khusus server (*server-only*) sehingga dapat langsung di-deploy ke Vercel tanpa file `vercel.json` atau pengaturan tambahan:
+## Langkah Deploy ke Vercel (Zero-Config)
 
 1. **Push ke GitHub**
-   Buat repositori baru di GitHub, lalu unggah kode proyek:
+   Inisialisasi repositori Git dan unggah ke GitHub:
    ```bash
    git init
    git add .
-   git commit -m "feat: rilis website Arc Lab Neo-Brutalist"
+   git commit -m "feat: website resmi Arc Lab Neo-Brutalist"
    git branch -M main
    git remote add origin https://github.com/USERNAME/arc-lab.git
    git push -u origin main
    ```
 2. **Import Repo di Vercel**
-   Masuk ke [vercel.com/new](https://vercel.com/new) dan pilih **Import** pada repositori `arc-lab` yang baru diunggah.
+   Buka [vercel.com/new](https://vercel.com/new), hubungkan akun GitHub Anda, lalu klik **Import** pada repositori `arc-lab`.
 3. **Pastikan Framework Preset: Nuxt.js**
-   Vercel akan otomatis mendeteksi **Framework Preset: Nuxt.js** (`Build Command`: `nuxt build`, `Output Directory`: `.output`). Klik **Deploy** dan situs siap diakses publik dalam ~1 menit.
+   Vercel otomatis memilih **Framework Preset: Nuxt.js** tanpa perlu mengubah pengaturan apa pun. Klik **Deploy** hingga situs aktif.

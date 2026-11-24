@@ -73,7 +73,7 @@ const instagramUrl = computed(() => {
           <a href="#layanan" class="hover:text-yellow transition-colors">Layanan</a>
           <a href="#mixer" class="hover:text-yellow transition-colors">3D Mixer</a>
           <a href="#transformasi" class="hover:text-yellow transition-colors">Studi Kasus</a>
-          <a href="#kalkulator" class="hover:text-yellow transition-colors">Kalkulator</a>
+          <a href="#harga" class="hover:text-yellow transition-colors">Harga</a>
           <a href="#faq" class="hover:text-yellow transition-colors">FAQ</a>
         </div>
 
