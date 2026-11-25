@@ -1,14 +1,42 @@
 <script setup lang="ts">
-import { ref, reactive, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import {
+  useBrandState,
+  PRODUCT_CATALOG,
+  BRAND_SWATCHES,
+  BACKDROP_PRESETS,
+  type ProductId,
+  type LabelLayout
+} from '~/composables/useBrandState'
+import { drawLabel } from '~/utils/labelCanvas'
+import { buildProductMockup, type MockupBuildResult } from '~/utils/mockups'
+import {
+  setupStudioStage,
+  createContactBlobMesh,
+  createCanvasLabelTexture,
+  disposeObjectTree,
+  captureStagePng
+} from '~/utils/threeStage'
+
+const {
+  brandName,
+  vibe,
+  colorHex,
+  finish,
+  productId,
+  backdropId,
+  setBrandName,
+  cycleBrandColor
+} = useBrandState()
 
 const stageWrapRef = ref<HTMLElement | null>(null)
 const canvasMountRef = ref<HTMLElement | null>(null)
 
-// Static fallback mode when WebGL is unavailable OR prefers-reduced-motion is enabled
 const staticFallback = ref(false)
 const sceneReady = ref(false)
-const isHoveringObject = ref(false)
-const isDraggingScene = ref(false)
+const isHoveringProduct = ref(false)
+const isDraggingTurntable = ref(false)
+const cameraFlashActive = ref(false)
 
 const hoveredCaption = reactive({
   visible: false,
@@ -17,657 +45,436 @@ const hoveredCaption = reactive({
   y: 0
 })
 
-let cleanupScene: (() => void) | null = null
-let cycleAllColorsFn: (() => void) | null = null
+// Quick keyboard-accessible product tabs shown along bottom studio bar
+const heroTabProducts = PRODUCT_CATALOG.slice(0, 6)
 
-function handleCycleColorsButton() {
-  cycleAllColorsFn?.()
+const displayBrand = computed(() => (brandName.value.trim() || 'KOPI SENJA').slice(0, 18).toUpperCase())
+
+const currentBackdropMeta = computed(
+  () => BACKDROP_PRESETS.find((b) => b.id === backdropId.value) || BACKDROP_PRESETS[0]
+)
+
+const dynamicAriaLabel = computed(() => {
+  const centerMeta = PRODUCT_CATALOG.find((p) => p.id === productId.value) || PRODUCT_CATALOG[0]
+  return `Studio foto 3D menampilkan ${centerMeta.name}, Cup Minuman, Botol Kaca, Kartu Nama, dan Sticker Sheet dengan merek ${displayBrand.value}`
+})
+
+let cleanupFn: (() => void) | null = null
+let triggerPhotoFn: (() => Promise<void>) | null = null
+let focus3DStageFn: (() => void) | null = null
+let pauseShowreelFn: (() => void) | null = null
+
+function onBrandInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value
+  setBrandName(val)
+  pauseShowreelFn?.()
 }
 
-function checkWebGLSupport(): boolean {
+function handleLihat3D() {
+  pauseShowreelFn?.()
+  focus3DStageFn?.()
+  if (typeof window !== 'undefined' && window.innerWidth < 1024 && stageWrapRef.value) {
+    stageWrapRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+function selectHeroProduct(id: ProductId) {
+  pauseShowreelFn?.()
+  productId.value = id
+}
+
+function handleCycleColor() {
+  pauseShowreelFn?.()
+  cycleBrandColor()
+}
+
+async function handleTakePhoto() {
+  pauseShowreelFn?.()
+  cameraFlashActive.value = true
+  setTimeout(() => {
+    cameraFlashActive.value = false
+  }, 320)
+  await triggerPhotoFn?.()
+}
+
+function isWebGLSupported(): boolean {
   try {
-    const testCanvas = document.createElement('canvas')
-    return !!(
-      window.WebGLRenderingContext &&
-      (testCanvas.getContext('webgl2') || testCanvas.getContext('webgl'))
-    )
+    const c = document.createElement('canvas')
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')))
   } catch {
     return false
   }
 }
 
+function easeOutBack(t: number): number {
+  const c1 = 1.70158
+  const c3 = c1 + 1
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
+}
+
 onMounted(async () => {
   if (typeof window === 'undefined') return
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (reducedMotion || !checkWebGLSupport()) {
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (prefersReducedMotion || !isWebGLSupported()) {
     staticFallback.value = true
     return
   }
 
   let THREE: typeof import('three')
+  let RoomEnvMod: typeof import('three/addons/environments/RoomEnvironment.js')
+
   try {
-    ;[THREE] = await Promise.all([import('three'), nextTick()])
+    ;[THREE, RoomEnvMod] = await Promise.all([
+      import('three'),
+      import('three/addons/environments/RoomEnvironment.js'),
+      nextTick()
+    ])
   } catch {
     staticFallback.value = true
     return
   }
 
-  const mountEl = canvasMountRef.value
   const stageEl = stageWrapRef.value
-  if (!mountEl || !stageEl) return
+  const mountEl = canvasMountRef.value
+  if (!stageEl || !mountEl) return
 
-  let renderer: import('three').WebGLRenderer
+  let stage: ReturnType<typeof setupStudioStage>
   try {
-    renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance'
-    })
+    stage = setupStudioStage(THREE, RoomEnvMod.RoomEnvironment, mountEl, currentBackdropMeta.value.hex, 29)
   } catch {
     staticFallback.value = true
     return
   }
 
-  renderer.setClearColor(0x000000, 0)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-  renderer.outputColorSpace = THREE.SRGBColorSpace
-
-  const getBounds = () => ({
-    width: Math.max(stageEl.clientWidth, 280),
-    height: Math.max(stageEl.clientHeight, 320)
-  })
-
-  const initialBounds = getBounds()
-  renderer.setSize(initialBounds.width, initialBounds.height)
-
-  // Accessible canvas attributes + touch-action: pan-y so vertical scroll is never hijacked
+  const { renderer, scene, camera, blobTexture, quality } = stage
   const canvas = renderer.domElement
   canvas.setAttribute('role', 'img')
-  canvas.setAttribute(
-    'aria-label',
-    'Meja kerja 3D interaktif Arc Lab menampilkan logo busur, kemasan kotak, kaleng, cangkir, dan palet warna desain'
-  )
+  canvas.setAttribute('aria-label', dynamicAriaLabel.value)
   canvas.style.touchAction = 'pan-y'
-  canvas.style.display = 'block'
-  canvas.style.width = '100%'
-  canvas.style.height = '100%'
-  mountEl.appendChild(canvas)
 
-  const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(36, initialBounds.width / initialBounds.height, 0.1, 50)
-  camera.position.set(0, 2.55, 7.65)
-  camera.lookAt(0, 0.15, 0)
+  // Slight low-angle longer-lens studio hero framing
+  const lookTarget = new THREE.Vector3(0, 0.72, 0.15)
+  const baseCamDist = 6.15
+  const baseCamElev = 0.21 // radians (~12 deg)
+  camera.position.set(0, lookTarget.y + Math.sin(baseCamElev) * baseCamDist, lookTarget.z + Math.cos(baseCamElev) * baseCamDist)
+  camera.lookAt(lookTarget)
 
-  // Hard Cell-Shading Lighting (single directional light + soft base ambient so shadows stay readable)
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.05)
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.55)
-  keyLight.position.set(4.5, 7.5, 5.5)
-  scene.add(ambientLight, keyLight)
+  // Studio turntable holding the 5 hero products
+  const turntable = new THREE.Group()
+  scene.add(turntable)
 
-  // 2-step Toon Gradient Map for crisp flat cell shading
-  const toonPixels = new Uint8Array([
-    196, 196, 202, 255,
-    255, 255, 255, 255
-  ])
-  const gradientTex = new THREE.DataTexture(toonPixels, 2, 1, THREE.RGBAFormat)
-  gradientTex.minFilter = THREE.NearestFilter
-  gradientTex.magFilter = THREE.NearestFilter
-  gradientTex.generateMipmaps = false
-  gradientTex.needsUpdate = true
+  // Shared per-layout CanvasTextures so typing ONLY redraws 2D canvases (never rebuilds geometry!)
+  const sharedTextures = {} as Record<LabelLayout, import('three').CanvasTexture>
+  const layouts: LabelLayout[] = ['front', 'wrap', 'card', 'sticker']
 
-  // Shared Ink BackSide Material for inverted-hull 2px outlines
-  const inkOutlineMat = new THREE.MeshBasicMaterial({
-    color: 0x0b0b0f,
-    side: THREE.BackSide
-  })
-  const inkFlatMat = new THREE.MeshBasicMaterial({ color: 0x0b0b0f })
-  const paperDeskMat = new THREE.MeshToonMaterial({
-    color: 0xeae5d9,
-    gradientMap: gradientTex
-  })
-
-  const disposables: { geometries: import('three').BufferGeometry[]; materials: import('three').Material[] } = {
-    geometries: [],
-    materials: [inkOutlineMat, inkFlatMat, paperDeskMat]
+  const renderAllLabelTextures = async () => {
+    const b = displayBrand.value
+    const v = vibe.value
+    const c = colorHex.value
+    const scale = quality.isLowEnd ? 0.75 : 1
+    await Promise.all(
+      layouts.map(async (ly) => {
+        const cv = await drawLabel(b, v, c, ly, scale)
+        if (sharedTextures[ly]) {
+          sharedTextures[ly].image = cv
+          sharedTextures[ly].needsUpdate = true
+        } else {
+          const tex = createCanvasLabelTexture(THREE, renderer, cv)
+          tex.userData.sharedResource = true
+          sharedTextures[ly] = tex
+        }
+      })
+    )
   }
 
-  /**
-   * Builds a watertight single-Mesh inverted-hull outlined geometry:
-   * Group 0 = main toon surface, Group 1 = normal-extruded BackSide #0B0B0F ink outline.
-   * Keeps total scene mesh count strictly < 15 while giving crisp 2px ink borders!
-   */
-  function buildOutlinedGeometry(
-    srcGeo: import('three').BufferGeometry,
-    outlineThickness = 0.042
-  ): import('three').BufferGeometry {
-    const nonIndexed = srcGeo.index ? srcGeo.toNonIndexed() : srcGeo.clone()
-    nonIndexed.computeVertexNormals()
+  await renderAllLabelTextures()
 
-    const outlinePart = nonIndexed.clone()
-    const pos = outlinePart.attributes.position as import('three').BufferAttribute
-    const norm = outlinePart.attributes.normal as import('three').BufferAttribute
-
-    // Average normals across coincident vertices so sharp box/cylinder corners stay watertight
-    const accum = new Map<string, [number, number, number]>()
-    for (let i = 0; i < pos.count; i++) {
-      const key = `${Math.round(pos.getX(i) * 1000)},${Math.round(pos.getY(i) * 1000)},${Math.round(pos.getZ(i) * 1000)}`
-      const cur = accum.get(key) || [0, 0, 0]
-      cur[0] += norm.getX(i)
-      cur[1] += norm.getY(i)
-      cur[2] += norm.getZ(i)
-      accum.set(key, cur)
-    }
-
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i)
-      const y = pos.getY(i)
-      const z = pos.getZ(i)
-      const key = `${Math.round(x * 1000)},${Math.round(y * 1000)},${Math.round(z * 1000)}`
-      const avg = accum.get(key)!
-      const len = Math.hypot(avg[0], avg[1], avg[2]) || 1
-      pos.setXYZ(
-        i,
-        x + (avg[0] / len) * outlineThickness,
-        y + (avg[1] / len) * outlineThickness,
-        z + (avg[2] / len) * outlineThickness
-      )
-    }
-
-    const vCount = nonIndexed.attributes.position.count
-    const mergedPos = new Float32Array(vCount * 2 * 3)
-    const mergedNorm = new Float32Array(vCount * 2 * 3)
-
-    mergedPos.set(nonIndexed.attributes.position.array as Float32Array, 0)
-    mergedPos.set(outlinePart.attributes.position.array as Float32Array, vCount * 3)
-
-    mergedNorm.set(nonIndexed.attributes.normal.array as Float32Array, 0)
-    mergedNorm.set(outlinePart.attributes.normal.array as Float32Array, vCount * 3)
-
-    const combined = new THREE.BufferGeometry()
-    combined.setAttribute('position', new THREE.BufferAttribute(mergedPos, 3))
-    combined.setAttribute('normal', new THREE.BufferAttribute(mergedNorm, 3))
-    combined.addGroup(0, vCount, 0)
-    combined.addGroup(vCount, vCount, 1)
-
-    srcGeo.dispose()
-    nonIndexed.dispose()
-    outlinePart.dispose()
-    disposables.geometries.push(combined)
-    return combined
+  interface HeroSlot {
+    key: 'center' | 'left' | 'right' | 'frontLeft' | 'frontRight'
+    productId: ProductId
+    anchor: import('three').Group
+    itemHolder: import('three').Group
+    blob: import('three').Mesh
+    built: MockupBuildResult | null
+    basePos: [number, number, number]
+    baseRotY: number
+    baseScale: number
+    hoverLift: number
+    hoverScale: number
+    bounceTime: number
+    swapAnimTime: number
   }
 
-  // Accent palette cycle: indigo -> cyan -> coral -> yellow
-  const ACCENT_HEX = [0x5b5bff, 0x22e6d0, 0xff6b4a, 0xffd84d] as const
+  const slotConfigs: {
+    key: HeroSlot['key']
+    pos: [number, number, number]
+    rotY: number
+    scale: number
+    blobR: [number, number]
+  }[] = [
+    { key: 'center', pos: [0, 0, 0.05], rotY: 0.06, scale: 1.08, blobR: [0.76, 0.52] },
+    { key: 'left', pos: [-1.32, 0, -0.34], rotY: 0.34, scale: 0.94, blobR: [0.58, 0.48] },
+    { key: 'right', pos: [1.34, 0, -0.3], rotY: -0.32, scale: 0.96, blobR: [0.54, 0.48] },
+    { key: 'frontLeft', pos: [-0.82, 0, 1.18], rotY: 0.22, scale: 0.76, blobR: [0.62, 0.56] },
+    { key: 'frontRight', pos: [0.84, 0, 1.22], rotY: -0.24, scale: 0.82, blobR: [0.58, 0.42] }
+  ]
 
-  // Root groups for parallax tilt & drag yaw
-  const parallaxRoot = new THREE.Group()
-  const yawGroup = new THREE.Group()
-  parallaxRoot.add(yawGroup)
-  scene.add(parallaxRoot)
+  const slots: HeroSlot[] = slotConfigs.map((cfg) => {
+    const anchor = new THREE.Group()
+    anchor.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2])
+    anchor.rotation.y = cfg.rotY
 
-  // 1 & 2. Desk Disc + Hard Offset Ink Shadow Disc (2 meshes)
-  const deskTopGeo = buildOutlinedGeometry(new THREE.CylinderGeometry(3.05, 3.05, 0.12, 36), 0.04)
-  const deskTopMesh = new THREE.Mesh(deskTopGeo, [paperDeskMat, inkOutlineMat])
-  deskTopMesh.position.set(0, -1.02, 0)
+    const blob = createContactBlobMesh(THREE, blobTexture, cfg.blobR[0], cfg.blobR[1], 0.35)
+    anchor.add(blob)
 
-  const deskShadowGeo = new THREE.CylinderGeometry(3.08, 3.08, 0.1, 36)
-  disposables.geometries.push(deskShadowGeo)
-  const deskShadowMesh = new THREE.Mesh(deskShadowGeo, inkFlatMat)
-  deskShadowMesh.position.set(0.16, -1.14, 0.18)
+    const itemHolder = new THREE.Group()
+    itemHolder.scale.setScalar(cfg.scale)
+    anchor.add(itemHolder)
+    turntable.add(anchor)
 
-  yawGroup.add(deskShadowMesh, deskTopMesh)
+    return {
+      key: cfg.key,
+      productId: 'pouch',
+      anchor,
+      itemHolder,
+      blob,
+      built: null,
+      basePos: cfg.pos,
+      baseRotY: cfg.rotY,
+      baseScale: cfg.scale,
+      hoverLift: 0,
+      hoverScale: 1,
+      bounceTime: -1,
+      swapAnimTime: -1
+    }
+  })
 
-  // 3. Merged Flat Dark Blob Shadows on Desk Surface (1 mesh total for all object shadows)
-  function buildMergedBlobShadows(blobs: { x: number; z: number; rx: number; rz: number }[]) {
-    const segs = 18
-    const vertsPerDisc = segs * 3
-    const arr = new Float32Array(blobs.length * vertsPerDisc * 3)
-    let offset = 0
-    for (const b of blobs) {
-      for (let s = 0; s < segs; s++) {
-        const a0 = (s / segs) * Math.PI * 2
-        const a1 = ((s + 1) / segs) * Math.PI * 2
-        // Center
-        arr[offset++] = b.x
-        arr[offset++] = 0
-        arr[offset++] = b.z
-        // P1
-        arr[offset++] = b.x + Math.cos(a1) * b.rx
-        arr[offset++] = 0
-        arr[offset++] = b.z + Math.sin(a1) * b.rz
-        // P0
-        arr[offset++] = b.x + Math.cos(a0) * b.rx
-        arr[offset++] = 0
-        arr[offset++] = b.z + Math.sin(a0) * b.rz
+  function computeSlotProductIds(centerId: ProductId): Record<HeroSlot['key'], ProductId> {
+    return {
+      center: centerId,
+      left: centerId === 'cup' ? 'pouch' : 'cup',
+      right: centerId === 'bottle' ? 'tote' : 'bottle',
+      frontLeft: centerId === 'sticker' ? 'box' : 'sticker',
+      frontRight: centerId === 'card' ? 'can' : 'card'
+    }
+  }
+
+  function mountSlotProduct(slot: HeroSlot, nextProdId: ProductId, animatePop = false) {
+    if (slot.built) {
+      slot.itemHolder.remove(slot.built.group)
+      disposeObjectTree(slot.built.group)
+      slot.built = null
+    }
+    slot.productId = nextProdId
+    const meta = PRODUCT_CATALOG.find((p) => p.id === nextProdId) || PRODUCT_CATALOG[0]
+    const tex = sharedTextures[meta.layout]
+    const built = buildProductMockup(nextProdId, THREE, tex, colorHex.value, finish.value, {
+      allowTransmission: quality.allowTransmission
+    })
+    built.group.traverse((o) => {
+      o.userData.heroSlot = slot
+    })
+    slot.built = built
+    slot.itemHolder.add(built.group)
+    if (animatePop) {
+      slot.swapAnimTime = 0
+    }
+  }
+
+  function rebuildAllSlots(animateCenter = false) {
+    const mapping = computeSlotProductIds(productId.value)
+    for (const s of slots) {
+      const targetId = mapping[s.key]
+      mountSlotProduct(s, targetId, animateCenter && s.key === 'center')
+    }
+  }
+
+  rebuildAllSlots(false)
+
+  // Watchers: debounce brandName 150ms (rebuild ONLY label textures, NEVER geometry per keystroke!)
+  let brandDebounceTimer: ReturnType<typeof setTimeout> | null = null
+  const stopWatchBrand = watch(brandName, () => {
+    canvas.setAttribute('aria-label', dynamicAriaLabel.value)
+    if (brandDebounceTimer) clearTimeout(brandDebounceTimer)
+    brandDebounceTimer = setTimeout(() => {
+      renderAllLabelTextures()
+    }, 150)
+  })
+
+  const stopWatchVibe = watch(vibe, () => {
+    renderAllLabelTextures()
+  })
+
+  const stopWatchColorFinish = watch([colorHex, finish], async () => {
+    await renderAllLabelTextures()
+    rebuildAllSlots(false)
+  })
+
+  const stopWatchProduct = watch(productId, (nextId) => {
+    canvas.setAttribute('aria-label', dynamicAriaLabel.value)
+    const mapping = computeSlotProductIds(nextId)
+    for (const s of slots) {
+      if (s.productId !== mapping[s.key]) {
+        mountSlotProduct(s, mapping[s.key], s.key === 'center')
       }
     }
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(arr, 3))
-    g.computeVertexNormals()
-    disposables.geometries.push(g)
-    return g
+  })
+
+  const stopWatchBackdrop = watch(backdropId, () => {
+    stage.setBackdropColor(currentBackdropMeta.value.hex)
+  })
+
+  // Showreel timer (swaps center product every 4s, pauses 10s on any user interaction)
+  let pauseShowreelUntil = 0
+  let lastShowreelSwap = performance.now()
+
+  const pauseShowreelFor10s = () => {
+    pauseShowreelUntil = performance.now() + 10000
+    lastShowreelSwap = performance.now()
+  }
+  pauseShowreelFn = pauseShowreelFor10s
+
+  focus3DStageFn = () => {
+    const centerSlot = slots[0]
+    if (centerSlot) centerSlot.bounceTime = 0
   }
 
-  const blobShadowsMesh = new THREE.Mesh(
-    buildMergedBlobShadows([
-      { x: 0.08, z: 0.08, rx: 0.72, rz: 0.42 },     // Center Logo
-      { x: -1.62, z: 0.28, rx: 0.58, rz: 0.38 },    // Box Package
-      { x: 1.66, z: -0.22, rx: 0.48, rz: 0.34 },    // Can
-      { x: 1.12, z: 1.18, rx: 0.44, rz: 0.32 },     // Cup
-      { x: -1.12, z: 1.28, rx: 0.56, rz: 0.26 },    // Palette Strip
-      { x: -1.55, z: -1.05, rx: 0.28, rz: 0.2 },    // Decor Cube
-      { x: 1.48, z: -1.25, rx: 0.28, rz: 0.2 }      // Decor Cone
-    ]),
-    inkFlatMat
-  )
-  blobShadowsMesh.position.y = -0.955
-  yawGroup.add(blobShadowsMesh)
-
-  interface InteractiveDeskItem {
-    id: string
-    label: string
-    group: import('three').Group
-    hitMesh: import('three').Mesh
-    colorMat: import('three').MeshToonMaterial
-    accentIndex: number
-    baseY: number
-    floatPhase: number
-    floatAmp: number
-    floatSpeed: number
-    currentScale: number
-    bounceTime: number
+  triggerPhotoFn = async () => {
+    const slug = displayBrand.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'brand'
+    await captureStagePng(renderer, scene, camera, `arc-lab-${slug}-hero.png`)
   }
 
-  const interactiveItems: InteractiveDeskItem[] = []
-  const raycastTargets: import('three').Object3D[] = []
-
-  function registerItem(opts: {
-    id: string
-    label: string
-    mesh: import('three').Mesh
-    extraChildren?: import('three').Object3D[]
-    colorMat: import('three').MeshToonMaterial
-    accentIndex: number
-    pos: [number, number, number]
-    rot?: [number, number, number]
-    floatPhase: number
-    floatAmp?: number
-    floatSpeed?: number
-  }): InteractiveDeskItem {
-    const group = new THREE.Group()
-    group.position.set(opts.pos[0], opts.pos[1], opts.pos[2])
-    if (opts.rot) group.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2])
-    group.add(opts.mesh)
-    if (opts.extraChildren) {
-      for (const ch of opts.extraChildren) group.add(ch)
-    }
-    yawGroup.add(group)
-
-    const item: InteractiveDeskItem = {
-      id: opts.id,
-      label: opts.label,
-      group,
-      hitMesh: opts.mesh,
-      colorMat: opts.colorMat,
-      accentIndex: opts.accentIndex,
-      baseY: opts.pos[1],
-      floatPhase: opts.floatPhase,
-      floatAmp: opts.floatAmp ?? 0.08,
-      floatSpeed: opts.floatSpeed ?? 1.5,
-      currentScale: 1,
-      bounceTime: -1
-    }
-    opts.mesh.userData.deskItem = item
-    if (opts.extraChildren) {
-      for (const ch of opts.extraChildren) ch.userData.deskItem = item
-    }
-    interactiveItems.push(item)
-    raycastTargets.push(group)
-    return item
-  }
-
-  function makeToonMat(accentIdx: number) {
-    const m = new THREE.MeshToonMaterial({
-      color: ACCENT_HEX[accentIdx],
-      gradientMap: gradientTex
-    })
-    disposables.materials.push(m)
-    return m
-  }
-
-  // 4 & 5. CENTER: 3D Arc Logo Mark (Open Partial Torus Ring + Ink Center Sphere)
-  const logoMat = makeToonMat(0) // Indigo #5B5BFF
-  const arcRingGeo = buildOutlinedGeometry(
-    new THREE.TorusGeometry(0.74, 0.16, 12, 28, Math.PI * 1.52),
-    0.042
-  )
-  const arcRingMesh = new THREE.Mesh(arcRingGeo, [logoMat, inkOutlineMat])
-  arcRingMesh.rotation.z = Math.PI * 0.74
-
-  const centerDotMat = new THREE.MeshToonMaterial({ color: 0x0b0b0f, gradientMap: gradientTex })
-  disposables.materials.push(centerDotMat)
-  const centerDotOutlineMat = new THREE.MeshBasicMaterial({ color: 0xf4f1ea, side: THREE.BackSide })
-  disposables.materials.push(centerDotOutlineMat)
-  const centerDotGeo = buildOutlinedGeometry(new THREE.SphereGeometry(0.22, 14, 12), 0.035)
-  const centerDotMesh = new THREE.Mesh(centerDotGeo, [centerDotMat, centerDotOutlineMat])
-
-  const logoItem = registerItem({
-    id: 'logo',
-    label: 'LOGO',
-    mesh: arcRingMesh,
-    extraChildren: [centerDotMesh],
-    colorMat: logoMat,
-    accentIndex: 0,
-    pos: [0, 0.34, 0],
-    floatPhase: 0,
-    floatAmp: 0.1,
-    floatSpeed: 1.4
-  })
-
-  // 6. CORAL BOX PACKAGE ("KEMASAN")
-  const boxMat = makeToonMat(2) // Coral #FF6B4A
-  const boxGeo = buildOutlinedGeometry(new THREE.BoxGeometry(0.84, 1.14, 0.58), 0.042)
-  const boxMesh = new THREE.Mesh(boxGeo, [boxMat, inkOutlineMat])
-  registerItem({
-    id: 'kemasan',
-    label: 'KEMASAN',
-    mesh: boxMesh,
-    colorMat: boxMat,
-    accentIndex: 2,
-    pos: [-1.68, -0.18, 0.22],
-    rot: [0.05, 0.38, -0.04],
-    floatPhase: 1.2,
-    floatAmp: 0.07,
-    floatSpeed: 1.3
-  })
-
-  // 7. CYAN CAN ("KALENG")
-  const canMat = makeToonMat(1) // Cyan #22E6D0
-  const canGeo = buildOutlinedGeometry(new THREE.CylinderGeometry(0.42, 0.42, 1.04, 18), 0.04)
-  const canMesh = new THREE.Mesh(canGeo, [canMat, inkOutlineMat])
-  registerItem({
-    id: 'kaleng',
-    label: 'KALENG',
-    mesh: canMesh,
-    colorMat: canMat,
-    accentIndex: 1,
-    pos: [1.62, -0.22, -0.26],
-    rot: [0.06, -0.35, 0.05],
-    floatPhase: 2.4,
-    floatAmp: 0.075,
-    floatSpeed: 1.45
-  })
-
-  // 8. YELLOW CUP ("CANGKIR")
-  const cupMat = makeToonMat(3) // Yellow #FFD84D
-  const cupGeo = buildOutlinedGeometry(new THREE.CylinderGeometry(0.44, 0.31, 0.88, 18), 0.04)
-  const cupMesh = new THREE.Mesh(cupGeo, [cupMat, inkOutlineMat])
-  registerItem({
-    id: 'cangkir',
-    label: 'CANGKIR',
-    mesh: cupMesh,
-    colorMat: cupMat,
-    accentIndex: 3,
-    pos: [1.06, -0.32, 1.12],
-    rot: [0.04, -0.25, -0.05],
-    floatPhase: 3.5,
-    floatAmp: 0.065,
-    floatSpeed: 1.6
-  })
-
-  // 9. FLOATING DECOR 1: Cube ("KUBUS")
-  const cubeMat = makeToonMat(0) // Indigo
-  const cubeGeo = buildOutlinedGeometry(new THREE.BoxGeometry(0.38, 0.38, 0.38), 0.036)
-  const cubeMesh = new THREE.Mesh(cubeGeo, [cubeMat, inkOutlineMat])
-  registerItem({
-    id: 'kubus',
-    label: 'TIPOGRAFI',
-    mesh: cubeMesh,
-    colorMat: cubeMat,
-    accentIndex: 0,
-    pos: [-1.52, 0.92, -0.95],
-    rot: [0.45, 0.6, 0.25],
-    floatPhase: 0.8,
-    floatAmp: 0.11,
-    floatSpeed: 1.8
-  })
-
-  // 10. FLOATING DECOR 2: Cone ("KERUCUT")
-  const coneMat = makeToonMat(2) // Coral
-  const coneGeo = buildOutlinedGeometry(new THREE.ConeGeometry(0.28, 0.56, 14), 0.036)
-  const coneMesh = new THREE.Mesh(coneGeo, [coneMat, inkOutlineMat])
-  registerItem({
-    id: 'kerucut',
-    label: 'ILUSTRASI',
-    mesh: coneMesh,
-    colorMat: coneMat,
-    accentIndex: 2,
-    pos: [1.46, 0.98, -1.12],
-    rot: [-0.25, 0.3, -0.32],
-    floatPhase: 2.1,
-    floatAmp: 0.11,
-    floatSpeed: 1.7
-  })
-
-  // 11. FLOATING DECOR 3: Half-Ring ("BUSUR")
-  const halfRingMat = makeToonMat(1) // Cyan
-  const halfRingGeo = buildOutlinedGeometry(
-    new THREE.TorusGeometry(0.3, 0.09, 10, 16, Math.PI),
-    0.034
-  )
-  const halfRingMesh = new THREE.Mesh(halfRingGeo, [halfRingMat, inkOutlineMat])
-  registerItem({
-    id: 'busur',
-    label: 'ELEMEN',
-    mesh: halfRingMesh,
-    colorMat: halfRingMat,
-    accentIndex: 1,
-    pos: [-0.72, 1.25, -0.55],
-    rot: [0.2, 0.3, 0.45],
-    floatPhase: 4.2,
-    floatAmp: 0.09,
-    floatSpeed: 1.9
-  })
-
-  // 12. ORBITING 4-SWATCH COLOR PALETTE STRIP ("PALET WARNA") — 1 Mesh with CanvasTexture!
-  const stripCanvas = document.createElement('canvas')
-  stripCanvas.width = 256
-  stripCanvas.height = 64
-  const sctx = stripCanvas.getContext('2d')
-  if (sctx) {
-    sctx.fillStyle = '#F4F1EA'
-    sctx.fillRect(0, 0, 256, 64)
-    const cols = ['#5B5BFF', '#22E6D0', '#FF6B4A', '#FFD84D']
-    cols.forEach((c, idx) => {
-      sctx.fillStyle = c
-      sctx.fillRect(10 + idx * 60, 10, 52, 44)
-      sctx.strokeStyle = '#0B0B0F'
-      sctx.lineWidth = 4
-      sctx.strokeRect(10 + idx * 60, 10, 52, 44)
-    })
-  }
-  const stripTex = new THREE.CanvasTexture(stripCanvas)
-  stripTex.colorSpace = THREE.SRGBColorSpace
-  const stripMat = new THREE.MeshToonMaterial({
-    color: 0xffffff,
-    map: stripTex,
-    gradientMap: gradientTex
-  })
-  disposables.materials.push(stripMat)
-  const stripGeo = buildOutlinedGeometry(new THREE.BoxGeometry(1.06, 0.08, 0.32), 0.032)
-  const stripMesh = new THREE.Mesh(stripGeo, [stripMat, inkOutlineMat])
-  const paletteItem = registerItem({
-    id: 'palet',
-    label: 'PALET WARNA',
-    mesh: stripMesh,
-    colorMat: stripMat,
-    accentIndex: 3,
-    pos: [-1.06, -0.68, 1.22],
-    rot: [0.12, 0.28, -0.05],
-    floatPhase: 5.0,
-    floatAmp: 0.05,
-    floatSpeed: 1.25
-  })
-  // Total THREE.Mesh count in scene = 12 (< 15)!
-
-  // Interaction state
+  // Pointer parallax (camera max 6 deg orbit), hover raycast, click bounce/promote, turntable drag
   const raycaster = new THREE.Raycaster()
   const pointerNDC = new THREE.Vector2(99, 99)
-  let pointerInside = false
-  let hoveredItem: InteractiveDeskItem | null = null
+  const projVec = new THREE.Vector3()
+  const MAX_CAM_ORBIT = THREE.MathUtils.degToRad(6)
 
-  // Parallax targets (max ~12 degrees = 0.21 rad)
-  const MAX_TILT = THREE.MathUtils.degToRad(12)
-  let targetTiltX = 0
-  let targetTiltY = 0
+  let targetCamAzimuth = 0
+  let targetCamElevOffset = 0
+  let currentCamAzimuth = 0
+  let currentCamElevOffset = 0
 
-  // Horizontal drag yaw with inertia
-  let isPointerDown = false
-  let dragMoved = false
-  let downClientX = 0
-  let downClientY = 0
-  let lastDragX = 0
-  let yawAngle = 0
-  let yawVelocity = 0
+  let hoveredSlot: HeroSlot | null = null
+  let pointerDown = false
+  let dragStarted = false
+  let downX = 0
+  let downY = 0
+  let lastX = 0
+  let turntableYaw = 0
+  let turntableVel = 0
 
-  // Central ring 360-degree spin on empty click
-  let ringSpinProgress = -1 // -1 = inactive, 0..1 = spinning
-  let ringSpinBaseZ = Math.PI * 0.74
-
-  function cycleItemColorAndBounce(item: InteractiveDeskItem) {
-    item.bounceTime = 0
-    if (item.id === 'palet') return // Keep 4-swatch texture crisp while still bouncing
-    item.accentIndex = (item.accentIndex + 1) % ACCENT_HEX.length
-    item.colorMat.color.setHex(ACCENT_HEX[item.accentIndex])
-  }
-
-  function triggerCentralSpin360() {
-    if (ringSpinProgress < 0) {
-      ringSpinBaseZ = arcRingMesh.rotation.z
-      ringSpinProgress = 0
-    }
-  }
-
-  // Keyboard-accessible button cycles all object colors + bounces + spins central ring
-  cycleAllColorsFn = () => {
-    for (const item of interactiveItems) {
-      cycleItemColorAndBounce(item)
-    }
-    triggerCentralSpin360()
-  }
-
-  const updatePointerCoords = (clientX: number, clientY: number) => {
+  const updatePointer = (clientX: number, clientY: number) => {
     const rect = canvas.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) return
     const nx = ((clientX - rect.left) / rect.width) * 2 - 1
     const ny = -(((clientY - rect.top) / rect.height) * 2 - 1)
     pointerNDC.set(nx, ny)
-    targetTiltY = THREE.MathUtils.clamp(nx, -1, 1) * MAX_TILT
-    targetTiltX = THREE.MathUtils.clamp(-ny, -1, 1) * MAX_TILT * 0.65
+    targetCamAzimuth = THREE.MathUtils.clamp(nx, -1, 1) * MAX_CAM_ORBIT
+    targetCamElevOffset = THREE.MathUtils.clamp(ny, -1, 1) * MAX_CAM_ORBIT * 0.55
   }
 
-  const projVec = new THREE.Vector3()
-
-  const runHoverRaycast = () => {
-    if (!pointerInside || isDraggingScene.value) {
-      hoveredItem = null
-      isHoveringObject.value = false
+  const updateHoverOverlay = (slot: HeroSlot | null) => {
+    if (!slot || !slot.built || isDraggingTurntable.value) {
+      hoveredSlot = null
+      isHoveringProduct.value = false
       hoveredCaption.visible = false
       return
     }
+    hoveredSlot = slot
+    isHoveringProduct.value = true
+    const meta = PRODUCT_CATALOG.find((p) => p.id === slot.productId)
+    slot.anchor.getWorldPosition(projVec)
+    projVec.y += slot.built.bounds.height * slot.baseScale + 0.18
+    projVec.project(camera)
+    const w = stageEl.clientWidth
+    const h = stageEl.clientHeight
+    hoveredCaption.text = meta ? meta.name.toUpperCase() : slot.productId.toUpperCase()
+    hoveredCaption.x = Math.min(w - 76, Math.max(76, (projVec.x * 0.5 + 0.5) * w))
+    hoveredCaption.y = Math.min(h - 44, Math.max(28, (-projVec.y * 0.5 + 0.5) * h))
+    hoveredCaption.visible = true
+  }
+
+  const pickHoveredSlot = (): HeroSlot | null => {
     raycaster.setFromCamera(pointerNDC, camera)
-    const hits = raycaster.intersectObjects(raycastTargets, true)
-    const found = hits[0]?.object?.userData?.deskItem as InteractiveDeskItem | undefined
-    if (found) {
-      hoveredItem = found
-      isHoveringObject.value = true
-      found.group.getWorldPosition(projVec)
-      projVec.y += 0.65
-      projVec.project(camera)
-      const w = stageEl.clientWidth
-      const h = stageEl.clientHeight
-      hoveredCaption.text = found.label
-      hoveredCaption.x = Math.min(w - 68, Math.max(68, (projVec.x * 0.5 + 0.5) * w))
-      hoveredCaption.y = Math.min(h - 36, Math.max(28, (-projVec.y * 0.5 + 0.5) * h))
-      hoveredCaption.visible = true
-    } else {
-      hoveredItem = null
-      isHoveringObject.value = false
-      hoveredCaption.visible = false
+    const roots = slots.map((s) => s.itemHolder)
+    const hits = raycaster.intersectObjects(roots, true)
+    let obj: import('three').Object3D | null = hits[0]?.object || null
+    while (obj) {
+      if (obj.userData?.heroSlot) return obj.userData.heroSlot as HeroSlot
+      obj = obj.parent
     }
+    return null
   }
 
   const onPointerDown = (e: PointerEvent) => {
-    isPointerDown = true
-    dragMoved = false
-    downClientX = e.clientX
-    downClientY = e.clientY
-    lastDragX = e.clientX
-    pointerInside = true
-    updatePointerCoords(e.clientX, e.clientY)
+    pauseShowreelFor10s()
+    pointerDown = true
+    dragStarted = false
+    downX = e.clientX
+    downY = e.clientY
+    lastX = e.clientX
+    updatePointer(e.clientX, e.clientY)
   }
 
   const onPointerMove = (e: PointerEvent) => {
-    pointerInside = true
-    updatePointerCoords(e.clientX, e.clientY)
+    updatePointer(e.clientX, e.clientY)
 
-    if (isPointerDown) {
-      const totalDx = e.clientX - downClientX
-      const totalDy = e.clientY - downClientY
-      // Respect vertical scroll on touch: only engage horizontal drag if horizontal motion dominates
-      if (!dragMoved && Math.hypot(totalDx, totalDy) > 6) {
-        if (e.pointerType === 'touch' && Math.abs(totalDy) > Math.abs(totalDx)) {
-          isPointerDown = false
+    if (pointerDown) {
+      const dx = e.clientX - downX
+      const dy = e.clientY - downY
+      if (!dragStarted && Math.hypot(dx, dy) > 6) {
+        // Respect vertical page scroll on touch
+        if (e.pointerType === 'touch' && Math.abs(dy) > Math.abs(dx)) {
+          pointerDown = false
           return
         }
-        dragMoved = true
-        isDraggingScene.value = true
+        dragStarted = true
+        isDraggingTurntable.value = true
         hoveredCaption.visible = false
       }
-
-      if (dragMoved) {
-        const stepDx = e.clientX - lastDragX
-        lastDragX = e.clientX
-        const deltaYaw = stepDx * 0.0075
-        yawAngle += deltaYaw
-        yawVelocity = deltaYaw
+      if (dragStarted) {
+        const stepX = e.clientX - lastX
+        lastX = e.clientX
+        const delta = stepX * 0.0075
+        turntableYaw += delta
+        turntableVel = delta
         return
       }
     }
 
     if (e.pointerType !== 'touch') {
-      runHoverRaycast()
+      updateHoverOverlay(pickHoveredSlot())
     }
   }
 
   const onPointerUp = (e: PointerEvent) => {
-    const wasTap = isPointerDown && !dragMoved
-    isPointerDown = false
-    isDraggingScene.value = false
+    const wasTap = pointerDown && !dragStarted
+    pointerDown = false
+    isDraggingTurntable.value = false
 
     if (wasTap) {
-      updatePointerCoords(e.clientX, e.clientY)
-      raycaster.setFromCamera(pointerNDC, camera)
-      const hits = raycaster.intersectObjects(raycastTargets, true)
-      const hitItem = hits[0]?.object?.userData?.deskItem as InteractiveDeskItem | undefined
-      if (hitItem) {
-        cycleItemColorAndBounce(hitItem)
-      } else {
-        triggerCentralSpin360()
+      pauseShowreelFor10s()
+      updatePointer(e.clientX, e.clientY)
+      const hit = pickHoveredSlot()
+      if (hit) {
+        if (hit.key === 'center') {
+          hit.bounceTime = 0
+        } else {
+          productId.value = hit.productId
+          slots[0].bounceTime = 0
+        }
       }
     }
   }
 
   const onPointerLeave = () => {
-    pointerInside = false
-    isPointerDown = false
-    isDraggingScene.value = false
-    hoveredItem = null
-    isHoveringObject.value = false
-    hoveredCaption.visible = false
-    targetTiltX = 0
-    targetTiltY = 0
+    pointerDown = false
+    isDraggingTurntable.value = false
+    targetCamAzimuth = 0
+    targetCamElevOffset = 0
+    updateHoverOverlay(null)
   }
 
   canvas.addEventListener('pointerdown', onPointerDown)
@@ -675,108 +482,105 @@ onMounted(async () => {
   window.addEventListener('pointerup', onPointerUp, { passive: true })
   canvas.addEventListener('pointerleave', onPointerLeave, { passive: true })
 
-  // Render Loop + IntersectionObserver + ResizeObserver + visibilitychange
+  // Render loop + IntersectionObserver + ResizeObserver + document.hidden
   let rafId = 0
   let running = false
-  let heroInView = true
-  let prevNow = performance.now()
-  let elapsedClock = 0
+  let inView = true
+  let prevTime = performance.now()
 
-  const tick = (now: number) => {
+  const animate = (now: number) => {
     if (!running) return
-    const dt = Math.min((now - prevNow) / 1000, 0.05)
-    prevNow = now
-    elapsedClock += dt
+    const dt = Math.min((now - prevTime) / 1000, 0.05)
+    prevTime = now
 
-    // 1. Damped mouse/touch parallax tilt (max ~12 deg)
-    parallaxRoot.rotation.x += (targetTiltX - parallaxRoot.rotation.x) * 0.08
-    parallaxRoot.rotation.y += (targetTiltY - parallaxRoot.rotation.y) * 0.08
-
-    // 2. Drag yaw + smooth inertia decay
-    if (!isDraggingScene.value) {
-      yawAngle += yawVelocity
-      yawVelocity *= 0.92
-      if (Math.abs(yawVelocity) < 0.00005) yawVelocity = 0
-    }
-    yawGroup.rotation.y = yawAngle
-
-    // 3. Central Arc Logo slow idle rotation + 360-deg empty-area click spin
-    logoItem.group.rotation.y = Math.sin(elapsedClock * 0.7) * 0.28
-    if (ringSpinProgress >= 0) {
-      ringSpinProgress += dt / 0.78
-      if (ringSpinProgress >= 1) {
-        ringSpinProgress = -1
-        arcRingMesh.rotation.z = ringSpinBaseZ
-      } else {
-        const eased = 1 - Math.pow(1 - ringSpinProgress, 3)
-        arcRingMesh.rotation.z = ringSpinBaseZ + eased * Math.PI * 2
-      }
-    } else {
-      arcRingMesh.rotation.z += dt * 0.28
+    // Automatic 4s center showreel when idle
+    if (now > pauseShowreelUntil && now - lastShowreelSwap >= 4000) {
+      lastShowreelSwap = now
+      const idx = PRODUCT_CATALOG.findIndex((p) => p.id === productId.value)
+      const next = PRODUCT_CATALOG[(idx + 1) % PRODUCT_CATALOG.length]
+      productId.value = next.id
     }
 
-    // Subtle slow orbit for color palette strip
-    const orbitAngle = elapsedClock * 0.35
-    paletteItem.group.position.x = -1.06 + Math.cos(orbitAngle) * 0.14
-    paletteItem.group.position.z = 1.22 + Math.sin(orbitAngle) * 0.1
+    // Smooth damped camera parallax orbit (max 6 degrees)
+    currentCamAzimuth += (targetCamAzimuth - currentCamAzimuth) * 0.065
+    currentCamElevOffset += (targetCamElevOffset - currentCamElevOffset) * 0.065
+    const elev = baseCamElev + currentCamElevOffset
+    const horizDist = Math.cos(elev) * baseCamDist
+    camera.position.set(
+      Math.sin(currentCamAzimuth) * horizDist,
+      lookTarget.y + Math.sin(elev) * baseCamDist,
+      lookTarget.z + Math.cos(currentCamAzimuth) * horizDist
+    )
+    camera.lookAt(lookTarget)
 
-    // Slow gentle spin on floating decor primitives
-    cubeMesh.rotation.x += dt * 0.45
-    cubeMesh.rotation.y += dt * 0.55
-    coneMesh.rotation.z = Math.sin(elapsedClock * 1.1) * 0.25 - 0.2
-    halfRingMesh.rotation.z += dt * 0.4
+    // Turntable drag inertia
+    if (!isDraggingTurntable.value) {
+      turntableYaw += turntableVel
+      turntableVel *= 0.92
+      if (Math.abs(turntableVel) < 0.00004) turntableVel = 0
+    }
+    turntable.rotation.y = turntableYaw
 
-    // 4. Individual float sine offsets + hover scale (~1.1) + click squash-and-stretch bounce
-    for (const item of interactiveItems) {
-      item.group.position.y =
-        item.baseY + Math.sin(elapsedClock * item.floatSpeed + item.floatPhase) * item.floatAmp
+    // Per-slot hover lift (0.05) & scale (1.04), click bounce, and showreel swap pop+spin
+    for (const s of slots) {
+      const targetLift = hoveredSlot === s ? 0.05 : 0
+      const targetHoverSc = hoveredSlot === s ? 1.04 : 1.0
+      s.hoverLift += (targetLift - s.hoverLift) * 0.14
+      s.hoverScale += (targetHoverSc - s.hoverScale) * 0.14
 
-      const targetScale = hoveredItem === item ? 1.11 : 1.0
-      item.currentScale += (targetScale - item.currentScale) * 0.14
-
-      let sx = item.currentScale
-      let sy = item.currentScale
-      let sz = item.currentScale
-
-      if (item.bounceTime >= 0) {
-        item.bounceTime += dt
-        const dur = 0.52
-        if (item.bounceTime >= dur) {
-          item.bounceTime = -1
+      let popScale = 1
+      let extraSpin = 0
+      if (s.swapAnimTime >= 0) {
+        s.swapAnimTime += dt
+        const dur = 0.45
+        if (s.swapAnimTime >= dur) {
+          s.swapAnimTime = -1
         } else {
-          const p = item.bounceTime / dur
-          const decay = Math.exp(-4.2 * p)
-          const wave = Math.sin(p * Math.PI * 3.0)
-          sy *= 1 + wave * decay * 0.28
-          sx *= 1 - wave * decay * 0.16
-          sz *= 1 - wave * decay * 0.16
-          item.group.position.y += Math.abs(wave) * decay * 0.24
+          const p = s.swapAnimTime / dur
+          popScale = Math.max(0.05, easeOutBack(p))
+          extraSpin = (1 - Math.pow(p, 0.65)) * Math.PI * 1.15
         }
       }
 
-      item.group.scale.set(sx, sy, sz)
+      let sx = s.baseScale * s.hoverScale * popScale
+      let sy = s.baseScale * s.hoverScale * popScale
+      let sz = s.baseScale * s.hoverScale * popScale
+      let bounceY = 0
+
+      if (s.bounceTime >= 0) {
+        s.bounceTime += dt
+        const bDur = 0.46
+        if (s.bounceTime >= bDur) {
+          s.bounceTime = -1
+        } else {
+          const p = s.bounceTime / bDur
+          const decay = Math.exp(-4.5 * p)
+          const wave = Math.sin(p * Math.PI * 3.0)
+          sy *= 1 + wave * decay * 0.11
+          sx *= 1 - wave * decay * 0.06
+          sz *= 1 - wave * decay * 0.06
+          bounceY = Math.abs(wave) * decay * 0.09
+        }
+      }
+
+      s.itemHolder.position.y = s.hoverLift + bounceY
+      s.itemHolder.rotation.y = extraSpin
+      s.itemHolder.scale.set(sx, sy, sz)
     }
 
-    // Keep caption anchored smoothly if hovering
-    if (hoveredItem && hoveredCaption.visible) {
-      hoveredItem.group.getWorldPosition(projVec)
-      projVec.y += 0.65
-      projVec.project(camera)
-      const w = stageEl.clientWidth
-      const h = stageEl.clientHeight
-      hoveredCaption.x = Math.min(w - 68, Math.max(68, (projVec.x * 0.5 + 0.5) * w))
-      hoveredCaption.y = Math.min(h - 36, Math.max(28, (-projVec.y * 0.5 + 0.5) * h))
+    if (hoveredSlot && hoveredCaption.visible) {
+      updateHoverOverlay(hoveredSlot)
     }
 
     renderer.render(scene, camera)
-    rafId = window.requestAnimationFrame(tick)
+    rafId = window.requestAnimationFrame(animate)
   }
 
   const startLoop = () => {
-    if (!running && heroInView && !document.hidden) {
+    if (!running && inView && !document.hidden) {
       running = true
-      prevNow = performance.now()
-      rafId = window.requestAnimationFrame(tick)
+      prevTime = performance.now()
+      rafId = window.requestAnimationFrame(animate)
     }
   }
 
@@ -793,8 +597,8 @@ onMounted(async () => {
       (entries) => {
         const entry = entries[0]
         if (!entry) return
-        heroInView = entry.isIntersecting
-        if (heroInView) startLoop()
+        inView = entry.isIntersecting
+        if (inView) startLoop()
         else stopLoop()
       },
       { threshold: 0.02 }
@@ -803,178 +607,303 @@ onMounted(async () => {
   }
 
   let ro: ResizeObserver | null = null
-  const handleResize = () => {
+  const onResize = () => {
     if (!stageWrapRef.value) return
-    const { width, height } = getBounds()
-    camera.aspect = width / height
-    camera.updateProjectionMatrix()
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-    renderer.setSize(width, height)
+    stage.resizeStage(stageWrapRef.value.clientWidth, stageWrapRef.value.clientHeight)
   }
-
   if ('ResizeObserver' in window) {
-    ro = new ResizeObserver(() => handleResize())
+    ro = new ResizeObserver(onResize)
     ro.observe(stageEl)
   } else {
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', onResize)
   }
 
-  const onVisibilityChange = () => {
+  const onVisChange = () => {
     if (document.hidden) stopLoop()
     else startLoop()
   }
-  document.addEventListener('visibilitychange', onVisibilityChange)
+  document.addEventListener('visibilitychange', onVisChange)
 
   sceneReady.value = true
   startLoop()
 
-  cleanupScene = () => {
+  cleanupFn = () => {
     stopLoop()
+    if (brandDebounceTimer) clearTimeout(brandDebounceTimer)
+    stopWatchBrand()
+    stopWatchVibe()
+    stopWatchColorFinish()
+    stopWatchProduct()
+    stopWatchBackdrop()
     io?.disconnect()
     ro?.disconnect()
-    window.removeEventListener('resize', handleResize)
-    document.removeEventListener('visibilitychange', onVisibilityChange)
+    window.removeEventListener('resize', onResize)
+    document.removeEventListener('visibilitychange', onVisChange)
     canvas.removeEventListener('pointerdown', onPointerDown)
     canvas.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     canvas.removeEventListener('pointerleave', onPointerLeave)
 
-    for (const g of disposables.geometries) g.dispose()
-    for (const m of disposables.materials) m.dispose()
-    gradientTex.dispose()
-    stripTex.dispose()
-
-    renderer.dispose()
-    renderer.forceContextLoss()
-    if (canvas.parentNode === mountEl) {
-      mountEl.removeChild(canvas)
+    for (const s of slots) {
+      if (s.built) disposeObjectTree(s.built.group)
+      disposeObjectTree(s.blob)
     }
+    for (const ly of layouts) {
+      sharedTextures[ly]?.dispose()
+    }
+    stage.disposeStage()
   }
 })
 
 onBeforeUnmount(() => {
-  cleanupScene?.()
-  cleanupScene = null
-  cycleAllColorsFn = null
+  cleanupFn?.()
+  cleanupFn = null
+  triggerPhotoFn = null
+  focus3DStageFn = null
+  pauseShowreelFn = null
 })
 </script>
 
 <template>
-  <section id="beranda" class="relative py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 overflow-x-clip">
+  <section id="beranda" class="relative py-8 sm:py-12 lg:py-14 px-4 sm:px-6 lg:px-8 overflow-x-clip">
     <div class="max-w-7xl mx-auto relative">
-      <!-- CSS-Only Rotated Sticker Badges Overlapping the Frame Edge -->
+      <!-- Floating Neo-Brutalist Stickers Over Frame Edges (CSS Only) -->
       <div
         aria-hidden="true"
-        class="hidden sm:inline-flex items-center gap-1.5 absolute -top-4 right-6 lg:right-12 z-20 px-3.5 py-1.5 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase -rotate-6 select-none pointer-events-none"
+        class="hidden sm:inline-flex items-center gap-1.5 absolute -top-4 left-6 z-20 px-3 py-1 bg-cyan border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase -rotate-3 select-none pointer-events-none"
       >
         <span>✦ Gratis konsultasi</span>
       </div>
       <div
         aria-hidden="true"
-        class="inline-flex items-center gap-1.5 absolute -top-3.5 left-4 sm:left-8 z-20 px-3 py-1 bg-cyan border-2 border-ink shadow-brutal-sm font-mono text-[11px] font-bold uppercase rotate-3 select-none pointer-events-none"
+        class="inline-flex items-center gap-1.5 absolute -top-4 right-4 sm:right-10 z-20 px-3.5 py-1 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-3 select-none pointer-events-none"
       >
-        <span>MEJA KERJA LAB</span>
+        <span>Mulai Rp99rb</span>
       </div>
       <div
         aria-hidden="true"
-        class="hidden md:inline-flex items-center gap-1.5 absolute -bottom-4 left-[41%] z-20 px-3.5 py-1.5 bg-coral text-ink border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-3 select-none pointer-events-none"
+        class="hidden md:inline-flex items-center gap-1.5 absolute -bottom-4 left-[36%] z-20 px-3.5 py-1 bg-coral text-ink border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-2 select-none pointer-events-none"
       >
-        <span>File Master Lengkap!</span>
+        <span>File master lengkap</span>
       </div>
 
-      <!-- 2-Column Neo-Brutalist Studio Frame (Copy ~45% Left, 3D Scene ~55% Right) -->
-      <div class="border-2 border-ink bg-paper shadow-brutal-lg grid grid-cols-1 lg:grid-cols-[45fr_55fr]">
-        <!-- LEFT COLUMN: Copy (SSR LCP — renders immediately without waiting for Three.js) -->
-        <div class="p-6 sm:p-9 lg:p-11 flex flex-col justify-between border-b-2 lg:border-b-0 lg:border-r-2 border-ink bg-paper">
+      <!-- 2px Ink Frame: Left ~42% Copy, Right ~58% Photoreal Studio Stage -->
+      <div class="border-2 border-ink bg-paper shadow-brutal-lg grid grid-cols-1 lg:grid-cols-[42fr_58fr]">
+        <!-- LEFT COPY COLUMN (SSR LCP — renders immediately without waiting for three.js) -->
+        <div class="p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-b-2 lg:border-b-0 lg:border-r-2 border-ink bg-paper">
           <div>
             <!-- Mono Label Chip -->
             <div class="mt-2 sm:mt-0 inline-flex items-center gap-2 px-3 py-1 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase tracking-wider">
               STUDIO DESAIN UNTUK UMKM
             </div>
 
-            <!-- H1 with Pure-CSS Rotating Highlighted Word -->
+            <!-- H1 with Rotating Highlight Block on Last Word -->
             <h1
-              class="mt-5 font-display text-4xl sm:text-5xl xl:text-[3.4rem] font-bold tracking-tight leading-[1.08] text-ink"
+              class="mt-4 font-display text-4xl sm:text-5xl xl:text-[3.25rem] font-bold tracking-tight leading-[1.08] text-ink"
               :class="{ 'hero-words-static': staticFallback }"
             >
-              <!-- Static full sentence for screen readers -->
               <span class="sr-only">
-                Desain yang bikin usahamu dilirik, diingat, dan dipercaya.
+                Brand-mu, langsung jadi kemasan, identitas, dan produk nyata.
               </span>
-
               <span aria-hidden="true" aria-live="off">
-                Desain yang bikin usahamu
-                <span class="hero-word-rotator mt-1.5">
+                Brand-mu, langsung jadi
+                <span class="hero-word-rotator mt-1">
                   <span class="hero-word-item hero-word-item-0 px-2.5 py-0.5 bg-yellow border-2 border-ink shadow-brutal-sm">
-                    dilirik.
+                    kemasan.
                   </span>
                   <span class="hero-word-item hero-word-item-1 px-2.5 py-0.5 bg-cyan border-2 border-ink shadow-brutal-sm">
-                    diingat.
+                    identitas.
                   </span>
                   <span class="hero-word-item hero-word-item-2 px-2.5 py-0.5 bg-coral border-2 border-ink shadow-brutal-sm">
-                    dipercaya.
+                    kebanggaan.
                   </span>
                 </span>
               </span>
             </h1>
 
-            <!-- Short Subcopy (1-2 sentences) -->
-            <p class="mt-5 text-base sm:text-lg text-ink/85 leading-relaxed max-w-lg">
-              Mulai dari logo, kemasan produk siap cetak, hingga konten sosmed yang rapi dengan harga ramah UMKM. Bikin pelanggan yakin sejak pandangan pertama.
+            <!-- Short Subcopy -->
+            <p class="mt-4 text-sm sm:text-base text-ink/85 leading-relaxed">
+              Logo, kemasan siap cetak, dan konten sosmed rapi dengan harga UMKM. Coba ketik merek usahamu di bawah untuk melihat hasilnya langsung di studio 3D.
             </p>
 
+            <!-- Live Brand Input + "Lihat di 3D" Button -->
+            <div class="mt-5 p-4 bg-paper-dark/70 border-2 border-ink shadow-brutal-sm">
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="hero-brand-input" class="font-mono text-xs font-bold uppercase tracking-wider">
+                  Ketik nama brand-mu
+                </label>
+                <span class="font-mono text-[11px] text-ink/70">{{ brandName.length }}/18</span>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  id="hero-brand-input"
+                  :value="brandName"
+                  type="text"
+                  maxlength="18"
+                  placeholder="KOPI SENJA"
+                  class="flex-1 min-w-0 px-3.5 py-2.5 bg-white border-2 border-ink font-display font-bold text-base focus:outline-none focus:ring-2 focus:ring-indigo"
+                  @input="onBrandInput"
+                />
+                <button
+                  type="button"
+                  class="px-4 py-2.5 bg-coral text-ink border-2 border-ink font-display font-bold text-sm shadow-brutal-sm hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none shrink-0"
+                  @click="handleLihat3D"
+                >
+                  Lihat di 3D
+                </button>
+              </div>
+
+              <!-- 6 Color Swatches -->
+              <div class="mt-3 flex flex-wrap items-center gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase text-ink/75 mr-1">Warna:</span>
+                <button
+                  v-for="sw in BRAND_SWATCHES"
+                  :key="sw.hex"
+                  type="button"
+                  :aria-label="`Pilih warna ${sw.name}`"
+                  :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
+                  class="w-7 h-7 border-2 border-ink transition-transform flex items-center justify-center"
+                  :class="
+                    colorHex.toLowerCase() === sw.hex.toLowerCase()
+                      ? 'scale-110 ring-2 ring-indigo ring-offset-1 ring-offset-paper shadow-brutal-sm'
+                      : 'hover:scale-105'
+                  "
+                  :style="{ backgroundColor: sw.hex }"
+                  @click="
+                    colorHex = sw.hex;
+                    pauseShowreelFn?.();
+                  "
+                >
+                  <span
+                    v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
+                    class="text-[10px] font-mono font-bold"
+                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-ink' : 'text-paper'"
+                    aria-hidden="true"
+                  >✓</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Two CTAs -->
-            <div class="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
+            <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <a
                 href="#harga"
-                class="brutal-btn bg-coral text-ink px-6 py-3.5 text-base"
+                class="brutal-btn bg-indigo text-paper px-6 py-3.5 text-sm sm:text-base"
               >
                 <span>Mulai Proyek</span>
                 <span aria-hidden="true">→</span>
               </a>
               <a
                 href="#mixer"
-                class="brutal-btn bg-white text-ink px-6 py-3.5 text-base"
+                class="brutal-btn bg-white text-ink px-6 py-3.5 text-sm sm:text-base"
               >
                 Coba Brand Mixer
               </a>
             </div>
           </div>
 
-          <!-- Trust Row of 3 Small Stat Tags (mono) -->
-          <div class="mt-8 pt-6 border-t-2 border-ink/15 flex flex-wrap items-center gap-2.5">
-            <span class="px-3 py-1.5 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
+          <!-- Trust Row -->
+          <div class="mt-7 pt-5 border-t-2 border-ink/15 flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
               120+ UMKM
             </span>
-            <span class="px-3 py-1.5 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
+            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
               7 hari kerja
             </span>
-            <span class="px-3 py-1.5 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
+            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
               Revisi 3x
             </span>
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: Meja Kerja Lab Scene (~55% Desktop, ~340px Mobile) -->
+        <!-- RIGHT STAGE COLUMN (~58% Desktop, 380px Mobile reserved height for zero CLS) -->
         <div
           ref="stageWrapRef"
-          class="relative h-[340px] sm:h-[420px] lg:h-auto lg:min-h-[540px] bg-paper bg-lab-dots overflow-hidden select-none"
+          class="relative h-[380px] sm:h-[450px] lg:h-auto lg:min-h-[600px] overflow-hidden select-none bg-[#EAE5DC]"
         >
-          <!-- SSR & Reduced-Motion / No-WebGL Static SVG Composition (Replaced smoothly once canvas mounts) -->
+          <!-- Semi-Realistic Vector Fallback (SSR + Reduced Motion + No WebGL) with Live Reactive <text> -->
           <div
             v-if="!sceneReady || staticFallback"
-            class="absolute inset-0 flex items-center justify-center p-4 sm:p-6"
+            class="absolute inset-0 flex items-center justify-center"
           >
-            <img
-              src="/hero-fallback.svg"
-              alt="Ilustrasi meja kerja studio desain Arc Lab berisi logo busur, kemasan kotak, kaleng, cangkir, dan palet warna"
-              width="680"
-              height="520"
-              class="w-full h-full object-contain"
-            />
+            <svg
+              viewBox="0 0 760 540"
+              class="w-full h-full object-cover"
+              role="img"
+              :aria-label="`Pratinjau kemasan studio untuk merek ${displayBrand}`"
+            >
+              <defs>
+                <linearGradient id="heroFallbackCyc" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" :stop-color="currentBackdropMeta.hex" />
+                  <stop offset="66%" :stop-color="currentBackdropMeta.hex" />
+                  <stop offset="78%" stop-color="#D9D3C7" />
+                  <stop offset="100%" :stop-color="currentBackdropMeta.hex" />
+                </linearGradient>
+                <radialGradient id="heroFallbackShadow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#0B0B0F" stop-opacity="0.34" />
+                  <stop offset="55%" stop-color="#0B0B0F" stop-opacity="0.14" />
+                  <stop offset="100%" stop-color="#0B0B0F" stop-opacity="0" />
+                </radialGradient>
+                <linearGradient id="heroFallbackPouch" x1="0" y1="0" x2="1" y2="0.2">
+                  <stop offset="0%" stop-color="#FAF7F1" />
+                  <stop offset="48%" stop-color="#F1ECE1" />
+                  <stop offset="100%" stop-color="#DAD2C3" />
+                </linearGradient>
+                <linearGradient id="heroFallbackGlass" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#4A2718" />
+                  <stop offset="30%" stop-color="#6B3B25" />
+                  <stop offset="78%" stop-color="#2E160D" />
+                  <stop offset="100%" stop-color="#4A2718" />
+                </linearGradient>
+              </defs>
+
+              <rect width="760" height="540" fill="url(#heroFallbackCyc)" />
+              <ellipse cx="195" cy="436" rx="92" ry="22" fill="url(#heroFallbackShadow)" />
+              <ellipse cx="380" cy="448" rx="126" ry="28" fill="url(#heroFallbackShadow)" />
+              <ellipse cx="566" cy="436" rx="84" ry="20" fill="url(#heroFallbackShadow)" />
+
+              <!-- Cup -->
+              <g transform="translate(132, 182)">
+                <line x1="68" y1="-34" x2="58" y2="42" :stroke="colorHex" stroke-width="10" stroke-linecap="round" />
+                <polygon points="14,54 114,54 98,248 30,248" fill="#F5F1E9" />
+                <polygon points="18,98 110,98 103,196 25,196" :fill="colorHex" />
+                <text x="64" y="152" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#FAF7F0">
+                  {{ displayBrand.slice(0, 12) }}
+                </text>
+                <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.84" />
+                <rect x="6" y="48" width="116" height="10" rx="5" fill="#E6E1D8" />
+              </g>
+
+              <!-- Bottle -->
+              <g transform="translate(514, 132)">
+                <rect x="36" y="0" width="36" height="32" rx="4" fill="#1F2026" />
+                <path d="M40,32 L40,78 C40,104 12,118 12,150 L12,292 C12,300 20,304 54,304 C88,304 96,300 96,292 L96,150 C96,118 68,104 68,78 L68,32 Z" fill="url(#heroFallbackGlass)" />
+                <rect x="22" y="146" width="8" height="142" rx="4" fill="#FFFFFF" fill-opacity="0.3" />
+                <rect x="12" y="168" width="84" height="102" fill="#FAF7F0" />
+                <rect x="18" y="176" width="72" height="6" :fill="colorHex" />
+                <text x="54" y="224" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="11" font-weight="700" fill="#181715">
+                  {{ displayBrand.slice(0, 12) }}
+                </text>
+                <text x="54" y="244" text-anchor="middle" font-family="monospace" font-size="8" fill="#6E6A63">250ML STUDIO</text>
+              </g>
+
+              <!-- Center Standing Pouch -->
+              <g transform="translate(274, 108)">
+                <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#heroFallbackPouch)" />
+                <line x1="18" y1="38" x2="194" y2="38" stroke="#D2C9BA" stroke-width="4" />
+                <rect x="28" y="64" width="156" height="224" rx="4" fill="#FAF8F3" />
+                <rect x="42" y="80" width="128" height="8" :fill="colorHex" />
+                <circle cx="106" cy="142" r="20" fill="none" stroke="#181715" stroke-width="4" stroke-dasharray="95 35" />
+                <circle cx="106" cy="142" r="6" :fill="colorHex" />
+                <text x="106" y="204" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="18" font-weight="700" fill="#181715">
+                  {{ displayBrand }}
+                </text>
+                <text x="106" y="228" text-anchor="middle" font-family="monospace" font-size="10" fill="#57534E">PRODUK PILIHAN · 250G</text>
+              </g>
+            </svg>
           </div>
 
-          <!-- Client-Only Three.js Interactive Desk Canvas -->
+          <!-- Client-Only Photoreal Three.js Canvas -->
           <ClientOnly>
             <div
               v-show="sceneReady && !staticFallback"
@@ -982,41 +911,77 @@ onBeforeUnmount(() => {
               data-cursor-grow
               class="w-full h-full"
               :class="[
-                isDraggingScene
+                isDraggingTurntable
                   ? 'cursor-grabbing'
-                  : isHoveringObject
+                  : isHoveringProduct
                     ? 'cursor-pointer'
                     : 'cursor-grab'
               ]"
             ></div>
           </ClientOnly>
 
-          <!-- Following Mono Caption Tag Overlay on Hover -->
+          <!-- Subtle Studio Vignette Overlay (CSS Only) -->
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(11,11,15,0.14)]"
+          ></div>
+
+          <!-- Camera Flash Overlay on "Foto!" -->
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 bg-white z-30 transition-opacity duration-300"
+            :class="cameraFlashActive ? 'opacity-90' : 'opacity-0'"
+          ></div>
+
+          <!-- Following Brutalist Caption Tag on Hover -->
           <div
             v-if="hoveredCaption.visible && sceneReady && !staticFallback"
             aria-hidden="true"
-            class="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full px-2.5 py-1 bg-ink text-paper border-2 border-ink font-mono text-[11px] font-bold uppercase tracking-wider shadow-brutal-sm transition-transform duration-75"
+            class="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full px-2.5 py-1 bg-yellow text-ink border-2 border-ink font-mono text-[11px] font-bold uppercase tracking-wider shadow-brutal-sm"
             :style="{ left: `${hoveredCaption.x}px`, top: `${hoveredCaption.y}px` }"
           >
             {{ hoveredCaption.text }}
           </div>
 
-          <!-- Bottom Hint Chip + Keyboard Accessible "Ganti warna" Button -->
+          <!-- Top-Right "Foto!" & "Ganti warna" Neo-Brutalist Controls -->
           <div
             v-if="sceneReady && !staticFallback"
-            class="absolute bottom-3 inset-x-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none"
+            class="absolute top-3 right-3 z-20 flex items-center gap-2"
           >
-            <span class="px-3 py-1 bg-paper/95 border-2 border-ink font-mono text-[11px] font-bold shadow-brutal-sm">
-              Klik &amp; geser objeknya
-            </span>
-
             <button
               type="button"
-              class="pointer-events-auto px-3 py-1 bg-yellow hover:bg-cyan border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm transition-transform hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
-              @click="handleCycleColorsButton"
+              class="px-3 py-1.5 bg-paper hover:bg-yellow border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              @click="handleCycleColor"
             >
               Ganti warna
             </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 bg-yellow hover:bg-cyan border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              @click="handleTakePhoto"
+            >
+              📸 Foto!
+            </button>
+          </div>
+
+          <!-- Bottom Accessible Product Switcher Tabs -->
+          <div
+            v-if="sceneReady && !staticFallback"
+            class="absolute bottom-3 inset-x-3 z-20 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5"
+          >
+            <div class="flex items-center gap-1.5" role="group" aria-label="Pilih produk tengah di studio">
+              <button
+                v-for="prod in heroTabProducts"
+                :key="prod.id"
+                type="button"
+                :aria-pressed="productId === prod.id ? 'true' : 'false'"
+                class="px-2.5 py-1 border-2 border-ink font-mono text-[11px] font-bold shrink-0 transition-colors shadow-brutal-sm"
+                :class="productId === prod.id ? 'bg-ink text-paper' : 'bg-paper/95 text-ink hover:bg-yellow'"
+                @click="selectHeroProduct(prod.id)"
+              >
+                {{ prod.shortName }}
+              </button>
+            </div>
           </div>
         </div>
       </div>

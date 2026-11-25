@@ -1,95 +1,87 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 520" width="680" height="520" role="img" aria-label="Ilustrasi meja kerja studio desain Arc Lab berisi logo busur 3D, kotak kemasan koral, kaleng sian, cangkir kuning, dan palet warna">
-  <!-- Desk Hard Offset Shadow Disc -->
-  <ellipse cx="352" cy="396" rx="258" ry="82" fill="#0B0B0F"/>
-  <!-- Desk Flat Paper Surface Disc -->
-  <ellipse cx="340" cy="384" rx="258" ry="82" fill="#EAE5D9" stroke="#0B0B0F" stroke-width="3.5"/>
-  <ellipse cx="340" cy="380" rx="224" ry="66" fill="none" stroke="#0B0B0F" stroke-opacity="0.12" stroke-width="2" stroke-dasharray="8 8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" width="760" height="540" role="img" aria-label="Foto studio kemasan produk UMKM di atas latar siklorama">
+  <defs>
+    <!-- Studio Cyclorama Sweep Gradient -->
+    <linearGradient id="cycBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EAE5DC"/>
+      <stop offset="58%" stop-color="#F4F1EA"/>
+      <stop offset="72%" stop-color="#E4DFD5"/>
+      <stop offset="100%" stop-color="#EFECE4"/>
+    </linearGradient>
+    <!-- Soft Contact Shadow -->
+    <radialGradient id="softShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0B0B0F" stop-opacity="0.34"/>
+      <stop offset="55%" stop-color="#0B0B0F" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0B0B0F" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Pouch Highlight Gradient -->
+    <linearGradient id="pouchBody" x1="0" y1="0" x2="1" y2="0.2">
+      <stop offset="0%" stop-color="#FAF7F1"/>
+      <stop offset="45%" stop-color="#F2ECE1"/>
+      <stop offset="100%" stop-color="#DDD5C7"/>
+    </linearGradient>
+    <!-- Cup Shading -->
+    <linearGradient id="cupBody" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#F3EFE7"/>
+      <stop offset="100%" stop-color="#D9D3C7"/>
+    </linearGradient>
+    <!-- Glass Bottle Shading -->
+    <linearGradient id="bottleGlass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4A2718"/>
+      <stop offset="28%" stop-color="#6B3B25"/>
+      <stop offset="75%" stop-color="#2E160D"/>
+      <stop offset="100%" stop-color="#4A2718"/>
+    </linearGradient>
+  </defs>
 
-  <!-- Hard Dark Blob Shadows on Desk -->
-  <ellipse cx="196" cy="378" rx="56" ry="18" fill="#0B0B0F"/>
-  <ellipse cx="342" cy="392" rx="68" ry="20" fill="#0B0B0F"/>
-  <ellipse cx="486" cy="374" rx="48" ry="16" fill="#0B0B0F"/>
-  <ellipse cx="432" cy="422" rx="44" ry="14" fill="#0B0B0F"/>
-  <ellipse cx="252" cy="426" rx="62" ry="14" fill="#0B0B0F"/>
+  <!-- Cyclorama Backdrop -->
+  <rect width="760" height="540" fill="url(#cycBg)"/>
 
-  <!-- Floating Decor: Indigo Cube (top-left) -->
-  <g transform="translate(132, 118) rotate(-14)">
-    <rect x="6" y="6" width="44" height="44" rx="4" fill="#0B0B0F"/>
-    <rect x="0" y="0" width="44" height="44" rx="4" fill="#5B5BFF" stroke="#0B0B0F" stroke-width="3.5"/>
-    <line x1="10" y1="12" x2="34" y2="12" stroke="#F4F1EA" stroke-width="3" stroke-linecap="round"/>
+  <!-- Soft Studio Contact Shadows -->
+  <ellipse cx="195" cy="436" rx="92" ry="22" fill="url(#softShadow)"/>
+  <ellipse cx="380" cy="448" rx="126" ry="28" fill="url(#softShadow)"/>
+  <ellipse cx="566" cy="436" rx="84" ry="20" fill="url(#softShadow)"/>
+
+  <!-- LEFT: Tapered Beverage Cup with Domed Lid & Straw -->
+  <g transform="translate(132, 182)">
+    <!-- Straw -->
+    <line x1="68" y1="-34" x2="58" y2="42" stroke="#FF6B4A" stroke-width="10" stroke-linecap="round"/>
+    <!-- Cup Tapered Body -->
+    <polygon points="14,54 114,54 98,248 30,248" fill="url(#cupBody)"/>
+    <!-- Printed Cup Band -->
+    <polygon points="18,98 110,98 103,196 25,196" fill="#FF6B4A"/>
+    <text x="64" y="150" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#FAF7F0">KOPI SENJA</text>
+    <!-- Domed Lid -->
+    <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.82"/>
+    <rect x="6" y="48" width="116" height="10" rx="5" fill="#EAE6DF"/>
   </g>
 
-  <!-- Floating Decor: Coral Cone (top-right) -->
-  <g transform="translate(498, 96) rotate(12)">
-    <polygon points="30,6 58,58 2,58" fill="#0B0B0F"/>
-    <polygon points="25,0 53,52 -3,52" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- RIGHT: Cold Brew Glass Bottle -->
+  <g transform="translate(514, 132)">
+    <!-- Screw Cap -->
+    <rect x="36" y="0" width="36" height="32" rx="4" fill="#FF6B4A"/>
+    <!-- Neck & Glass Body -->
+    <path d="M40,32 L40,78 C40,104 12,118 12,150 L12,292 C12,300 20,304 54,304 C88,304 96,300 96,292 L96,150 C96,118 68,104 68,78 L68,32 Z" fill="url(#bottleGlass)"/>
+    <!-- Specular Glass Highlight -->
+    <rect x="22" y="146" width="8" height="142" rx="4" fill="#FFFFFF" fill-opacity="0.32"/>
+    <!-- Bottle Wrap Label -->
+    <rect x="12" y="168" width="84" height="102" fill="#FAF7F0"/>
+    <rect x="18" y="176" width="72" height="6" fill="#FF6B4A"/>
+    <text x="54" y="224" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#181715">KOPI SENJA</text>
+    <text x="54" y="244" text-anchor="middle" font-family="monospace" font-size="8" fill="#6E6A63">250ML COLD BREW</text>
   </g>
 
-  <!-- Floating Decor: Cyan Half-Ring (upper center-left) -->
-  <g transform="translate(248, 86) rotate(-18)">
-    <path d="M4 34 A26 26 0 0 1 56 34" fill="none" stroke="#0B0B0F" stroke-width="15" stroke-linecap="round" transform="translate(4,4)"/>
-    <path d="M4 34 A26 26 0 0 1 56 34" fill="none" stroke="#22E6D0" stroke-width="11" stroke-linecap="round"/>
-    <path d="M4 34 A26 26 0 0 1 56 34" fill="none" stroke="#0B0B0F" stroke-width="3" stroke-linecap="round"/>
-  </g>
-
-  <!-- LEFT OBJECT: Coral Box Package ("KEMASAN") -->
-  <g transform="translate(132, 206)">
-    <!-- 3D Side Face -->
-    <polygon points="96,16 124,2 124,142 96,158" fill="#D94E30" stroke="#0B0B0F" stroke-width="3.5" stroke-linejoin="round"/>
-    <!-- 3D Top Face -->
-    <polygon points="0,16 28,2 124,2 96,16" fill="#FFD84D" stroke="#0B0B0F" stroke-width="3.5" stroke-linejoin="round"/>
-    <!-- Front Face -->
-    <rect x="0" y="16" width="96" height="142" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="3.5" stroke-linejoin="round"/>
-    <!-- Label Detail -->
-    <rect x="14" y="42" width="68" height="74" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3"/>
-    <rect x="22" y="54" width="52" height="12" fill="#0B0B0F"/>
-    <rect x="22" y="74" width="38" height="8" fill="#5B5BFF"/>
-    <circle cx="48" cy="99" r="8" fill="#FFD84D" stroke="#0B0B0F" stroke-width="2.5"/>
-  </g>
-
-  <!-- RIGHT-BACK OBJECT: Cyan Can ("KALENG") -->
-  <g transform="translate(442, 212)">
-    <path d="M0 18 L0 134 A44 14 0 0 0 88 134 L88 18 Z" fill="#22E6D0" stroke="#0B0B0F" stroke-width="3.5" stroke-linejoin="round"/>
-    <ellipse cx="44" cy="18" rx="44" ry="14" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3.5"/>
-    <ellipse cx="44" cy="18" rx="26" ry="7" fill="none" stroke="#0B0B0F" stroke-width="2.5"/>
-    <!-- Can Stripe & Badge -->
-    <rect x="2" y="52" width="84" height="48" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3"/>
-    <text x="44" y="82" text-anchor="middle" font-family="monospace" font-size="15" font-weight="800" fill="#0B0B0F">ARC</text>
-  </g>
-
-  <!-- CENTER HERO OBJECT: 3D Arc Logo Mark (Indigo Open Ring + Ink Center Sphere) -->
-  <g transform="translate(340, 236)">
-    <!-- Back Hard Offset Shadow of Ring -->
-    <path d="M-58 48 A82 82 0 1 1 58 48" fill="none" stroke="#0B0B0F" stroke-width="34" stroke-linecap="round" transform="translate(6, 7)"/>
-    <!-- Indigo Main Ring -->
-    <path d="M-58 48 A82 82 0 1 1 58 48" fill="none" stroke="#5B5BFF" stroke-width="26" stroke-linecap="round"/>
-    <!-- Highlight Toon Band -->
-    <path d="M-64 -26 A76 76 0 0 1 42 -62" fill="none" stroke="#8585FF" stroke-width="7" stroke-linecap="round"/>
-    <!-- Center Ink Dot Sphere -->
-    <circle cx="4" cy="4" r="23" fill="#0B0B0F"/>
-    <circle cx="0" cy="0" r="22" fill="#0B0B0F" stroke="#F4F1EA" stroke-width="2.5"/>
-    <circle cx="-6" cy="-6" r="5" fill="#FFD84D"/>
-  </g>
-
-  <!-- FRONT-RIGHT OBJECT: Yellow Cup ("CANGKIR") -->
-  <g transform="translate(394, 298)">
-    <!-- Cup Body -->
-    <polygon points="6,20 74,20 64,108 16,108" fill="#FFD84D" stroke="#0B0B0F" stroke-width="3.5" stroke-linejoin="round"/>
-    <!-- Coffee Sleeve -->
-    <polygon points="10,48 70,48 67,80 13,80" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="40" cy="64" r="8" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="2.5"/>
-    <!-- Barista Lid -->
-    <rect x="0" y="8" width="80" height="14" rx="4" fill="#0B0B0F"/>
-    <rect x="8" y="0" width="64" height="10" rx="3" fill="#0B0B0F"/>
-  </g>
-
-  <!-- FRONT-LEFT: Flat Color Palette Strip (4 Swatch Tiles) -->
-  <g transform="translate(184, 396) rotate(-7)">
-    <rect x="5" y="5" width="142" height="36" rx="4" fill="#0B0B0F"/>
-    <rect x="0" y="0" width="142" height="36" rx="4" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3"/>
-    <rect x="7" y="6" width="28" height="24" fill="#5B5BFF" stroke="#0B0B0F" stroke-width="2"/>
-    <rect x="40" y="6" width="28" height="24" fill="#22E6D0" stroke="#0B0B0F" stroke-width="2"/>
-    <rect x="73" y="6" width="28" height="24" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="2"/>
-    <rect x="106" y="6" width="28" height="24" fill="#FFD84D" stroke="#0B0B0F" stroke-width="2"/>
+  <!-- CENTER: Standing Pouch Mockup -->
+  <g transform="translate(274, 108)">
+    <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#pouchBody)"/>
+    <!-- Zip Strip -->
+    <line x1="18" y1="38" x2="194" y2="38" stroke="#D2C9BA" stroke-width="4"/>
+    <!-- Front Label Print -->
+    <rect x="28" y="64" width="156" height="224" rx="4" fill="#FAF8F3"/>
+    <rect x="42" y="80" width="128" height="8" fill="#FF6B4A"/>
+    <circle cx="106" cy="142" r="20" fill="none" stroke="#181715" stroke-width="4" stroke-dasharray="95 35"/>
+    <circle cx="106" cy="142" r="6" fill="#FF6B4A"/>
+    <text x="106" y="204" text-anchor="middle" font-family="sans-serif" font-size="21" font-weight="700" fill="#181715">KOPI SENJA</text>
+    <text x="106" y="228" text-anchor="middle" font-family="monospace" font-size="10" fill="#57534E">PRODUK PILIHAN · 250G</text>
   </g>
 </svg>

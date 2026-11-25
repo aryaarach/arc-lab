@@ -1,18 +1,20 @@
 # Arc Lab — Studio Desain Grafis untuk UMKM
 
-Website produksi **Arc Lab** dengan tema **Neo-Brutalist Lab** (`#F4F1EA` paper, `#0B0B0F` ink, border 2px tegas, dan bayangan solid `6px 6px 0`), dibangun menggunakan **Nuxt 3 (Vue 3 `<script setup>`)**, **Tailwind CSS**, dan **Three.js**. Seluruh antarmuka berbahasa Indonesia dan siap di-deploy ke **Vercel tanpa konfigurasi tambahan (zero-config)**.
+Website produksi **Arc Lab** dengan tema antarmuka **Neo-Brutalist Lab** (`#F4F1EA` paper, `#0B0B0F` ink, border 2px tegas, dan bayangan solid `6px 6px 0`) yang dikontraskan dengan **Studio Mockup 3D Fotorealistik**, dibangun menggunakan **Nuxt 3 (Vue 3 `<script setup>`)**, **Tailwind CSS**, dan **Three.js**. Seluruh teks berbahasa Indonesia dan siap di-deploy ke **Vercel tanpa konfigurasi tambahan (zero-config)**.
 
-## Fitur Utama
+## Arsitektur Studio Mockup 3D Baru
 
-1. **HeroScene ("Meja Kerja Lab" — Three.js Toon/Flat)**:
-   - Kolom kiri (SSR LCP instan tanpa menunggu Three.js) menampilkan judul utama dengan kata sorotan bergilir setiap 2,2 detik via CSS murni (`dilirik.`, `diingat.`, `dipercaya.`), tombol **Mulai Proyek** (`#harga`) & **Coba Brand Mixer** (`#mixer`), deretan metrik kepercayaan, dan stiker miring CSS.
-   - Kolom kanan (`<ClientOnly>` + `import('three')` dinamis) menampilkan meja kerja studio bergaya *flat/toon cell-shaded* dengan garis tepi tinta 2px (*inverted-hull*): logo busur 3D di tengah, kotak kemasan koral, kaleng sian, cangkir kuning, primitif dekoratif melayang, dan strip palet 4 warna.
-   - Interaksi penuh: paralaks kursor/sentuhan (~12°), *hover raycast* dengan label objek (`LOGO`, `KEMASAN`, `KALENG`, `CANGKIR`, dll.), klik objek untuk efek pantul *squash-and-stretch* & rotasi warna aksen (atau klik area kosong untuk putaran 360° cincin busur), geser horizontal dengan inersia (`touch-action: pan-y` agar gulir halaman vertikal di ponsel tidak terganggu), tombol keyboard **Ganti warna**, serta fallback otomatis ke `/public/hero-fallback.svg` saat tanpa JS, tanpa WebGL, atau `prefers-reduced-motion` aktif.
-2. **BrandMixer (Three.js + OrbitControls + CanvasTexture)**: Kustomisasi kemasan 3D (Box, Kaleng, Cup) dengan nama brand (maks. 18 karakter), 4 gaya visual (*Minimalis*, *Playful*, *Premium*, *Retro*), 6 warna, efek pantul saat objek diklik, dan tautan WhatsApp otomatis berisi pilihan pengguna.
-3. **PriceCalc (`#harga`)**: Empat pilihan layanan dengan animasi angka *eased count tween*; saat keempatnya dicentang, muncul harga paket **Rp499.000**, harga lama **Rp715.000** dicoret, serta animasi stempel diskon.
-4. **BeforeAfter**: Penggeser perbandingan desain sebelum vs sesudah berbasis *pointer events* yang mendukung layar sentuh dan tombol panah keyboard.
-5. **ProcessTimeline**: Linimasa horizontal `scroll-snap` di ponsel dengan penanda ikon busur (*arc-dot*) yang mengikuti progres gulir.
-6. **ArcCursor & `v-reveal`**: Kursor cincin khusus desktop yang membesar pada elemen interaktif (disembunyikan di perangkat sentuh) serta direktif animasi muncul berbasis `IntersectionObserver`.
+Pembaruan *Photoreal Studio Mockup* pada bagian **Hero** dan **Brand Mixer** didukung oleh modul berikut:
+
+- [`composables/useBrandState.ts`](./composables/useBrandState.ts) — State reaktif lintas komponen berbasis `useState` (aman untuk SSR): `brandName` (maks. 18 karakter, bawaan `"KOPI SENJA"`), `vibe`, `colorHex`, `finish`, `productId`, dan `backdropId`, beserta daftar katalog produk, palet warna, dan preset latar siklorama.
+- [`utils/labelCanvas.ts`](./utils/labelCanvas.ts) — Generator label cetak `drawLabel(brand, vibe, colorHex, layout)` yang menunggu `document.fonts.ready`, mendukung 4 gaya (*Minimalis*, *Playful*, *Premium*, *Retro*), 4 tata letak (`wrap` 2:1, `front` 1:1, `card`, `sticker`), serta tekstur *grain* kertas halus bergaya cetakan asli.
+- [`utils/mockups.ts`](./utils/mockups.ts) — 10 pembangun produk 3D prosedural berbasis `MeshPhysicalMaterial` (Box kemasan, Kaleng, Cup minuman, Botol kaca berisi cairan, Toples kaca, Pouch standing, Tote bag kanvas bertekstur tenun, Paper shopping bag berlipat samping, tumpukan Kartu nama, dan Sticker sheet vinil berujung melengkung).
+- [`utils/threeStage.ts`](./utils/threeStage.ts) — Utilitas panggung foto studio bersama: `RoomEnvironment` via `PMREMGenerator`, pencahayaan 3 titik dengan bayangan lembut (`PCFSoftShadowMap`), latar siklorama tanpa sambungan (`ExtrudeGeometry`), bayangan kontak radial, tangkapan foto PNG resolusi 2x, dan pembersihan memori menyeluruh (`dispose`).
+
+### Cara Menambahkan Mockup Baru
+
+1. Tambahkan satu fungsi pembangun `export function buildNamaProdukMockup(THREE, texture, colorHex, finish, options): MockupBuildResult` di [`utils/mockups.ts`](./utils/mockups.ts) lalu daftarkan pada objek `MOCKUP_BUILDERS`.
+2. Tambahkan satu entri metadata produk baru pada `PRODUCT_CATALOG` (dan tipe `ProductId`) di [`composables/useBrandState.ts`](./composables/useBrandState.ts) beserta ikon SVG tipis di `productSvgIcons` pada [`components/BrandMixer.vue`](./components/BrandMixer.vue). Produk baru akan otomatis muncul di *showreel* Hero, pemilih produk, serta lantai studio **Brand Kit**!
 
 ## Konfigurasi Kontak Terpusat
 
@@ -39,26 +41,18 @@ npm run dev
 
 Buka `http://localhost:3000` di peramban.
 
-Untuk menguji build produksi secara lokal:
-
-```bash
-npm run build
-npm run preview
-```
-
 ## Langkah Deploy ke Vercel (Zero-Config)
 
 1. **Push ke GitHub**
-   Inisialisasi repositori Git dan unggah ke GitHub:
    ```bash
    git init
    git add .
-   git commit -m "feat: website resmi Arc Lab Neo-Brutalist"
+   git commit -m "feat: studio mockup 3D fotorealistik Arc Lab"
    git branch -M main
    git remote add origin https://github.com/USERNAME/arc-lab.git
    git push -u origin main
    ```
 2. **Import Repo di Vercel**
-   Buka [vercel.com/new](https://vercel.com/new), hubungkan akun GitHub Anda, lalu klik **Import** pada repositori `arc-lab`.
-3. **Pastikan Framework Preset: Nuxt.js**
-   Vercel otomatis memilih **Framework Preset: Nuxt.js** tanpa perlu mengubah pengaturan apa pun. Klik **Deploy** hingga situs aktif.
+   Buka [vercel.com/new](https://vercel.com/new), hubungkan akun GitHub Anda, dan pilih **Import** pada repositori `arc-lab`.
+3. **Framework Preset: Nuxt.js**
+   Vercel otomatis mendeteksi **Framework Preset: Nuxt.js** tanpa pengaturan tambahan. Klik **Deploy**.
