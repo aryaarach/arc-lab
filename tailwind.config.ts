@@ -11,47 +11,59 @@ export default <Partial<Config>>{
   theme: {
     extend: {
       colors: {
-        paper: '#F4F1EA',
-        'paper-dark': '#EAE5D9',
-        ink: '#0B0B0F',
-        indigo: '#5B5BFF',
-        cyan: '#22E6D0',
-        coral: '#FF6B4A',
-        yellow: '#FFD84D'
+        cream: '#FAF7F2',
+        sand: '#EFE8DC',
+        espresso: '#1F1A17',
+        terracotta: {
+          DEFAULT: '#C8553D',
+          deep: '#A93F29',
+          soft: '#F3DFDA'
+        },
+        sage: {
+          DEFAULT: '#8FA48A',
+          deep: '#475A43',
+          soft: '#E3EAE1'
+        },
+        butter: {
+          DEFAULT: '#F2D98D',
+          soft: '#F8EDD0'
+        }
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
-        sans: ['"Inter"', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace']
+        display: ['"Fraunces"', 'Georgia', '"Times New Roman"', 'serif'],
+        sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif']
+      },
+      borderRadius: {
+        card: '24px',
+        stage: '28px'
       },
       boxShadow: {
-        brutal: '6px 6px 0 0 #0B0B0F',
-        'brutal-sm': '3px 3px 0 0 #0B0B0F',
-        'brutal-lg': '10px 10px 0 0 #0B0B0F',
-        'brutal-white': '6px 6px 0 0 #F4F1EA',
-        'brutal-cyan': '6px 6px 0 0 #22E6D0',
-        'brutal-yellow': '6px 6px 0 0 #FFD84D'
+        editorial: '0 20px 50px -20px rgba(31, 26, 23, 0.25)',
+        'editorial-sm': '0 10px 28px -14px rgba(31, 26, 23, 0.20)',
+        'editorial-lg': '0 28px 64px -22px rgba(31, 26, 23, 0.30)'
       },
-      borderWidth: {
-        DEFAULT: '2px',
-        2: '2px',
-        3: '3px'
+      transitionTimingFunction: {
+        editorial: 'cubic-bezier(0.22, 1, 0.36, 1)'
       },
       keyframes: {
         marquee: {
           '0%': { transform: 'translateX(0%)' },
           '100%': { transform: 'translateX(-50%)' }
         },
-        stamp: {
-          '0%': { transform: 'scale(2.4) rotate(-18deg)', opacity: '0' },
-          '65%': { transform: 'scale(0.92) rotate(-7deg)', opacity: '1' },
-          '82%': { transform: 'scale(1.06) rotate(-5deg)', opacity: '1' },
-          '100%': { transform: 'scale(1) rotate(-6deg)', opacity: '1' }
+        ribbonUnfurl: {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(-8px) scale(0.94)'
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0) scale(1)'
+          }
         }
       },
       animation: {
-        marquee: 'marquee 26s linear infinite',
-        stamp: 'stamp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards'
+        marquee: 'marquee 44s linear infinite',
+        ribbon: 'ribbonUnfurl 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards'
       }
     }
   }

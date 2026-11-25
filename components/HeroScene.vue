@@ -37,6 +37,7 @@ const sceneReady = ref(false)
 const isHoveringProduct = ref(false)
 const isDraggingTurntable = ref(false)
 const cameraFlashActive = ref(false)
+const stageParallaxY = ref(0)
 
 const hoveredCaption = reactive({
   visible: false,
@@ -59,6 +60,14 @@ const dynamicAriaLabel = computed(() => {
   return `Studio foto 3D menampilkan ${centerMeta.name}, Cup Minuman, Botol Kaca, Kartu Nama, dan Sticker Sheet dengan merek ${displayBrand.value}`
 })
 
+function isLightSwatch(hex: string): boolean {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.slice(0, 2), 16) / 255
+  const g = parseInt(clean.slice(2, 4), 16) / 255
+  const b = parseInt(clean.slice(4, 6), 16) / 255
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.56
+}
+
 let cleanupFn: (() => void) | null = null
 let triggerPhotoFn: (() => Promise<void>) | null = null
 let focus3DStageFn: (() => void) | null = null
@@ -73,7 +82,7 @@ function onBrandInput(e: Event) {
 function handleLihat3D() {
   pauseShowreelFn?.()
   focus3DStageFn?.()
-  if (typeof window !== 'undefined' && window.innerWidth < 1024 && stageWrapRef.value) {
+  if (stageWrapRef.value) {
     stageWrapRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
@@ -116,8 +125,25 @@ onMounted(async () => {
   if (typeof window === 'undefined') return
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  // Subtle vertical card parallax on scroll (disabled for reduced motion)
+  const onWindowScrollParallax = () => {
+    if (prefersReducedMotion || !stageWrapRef.value) return
+    const rect = stageWrapRef.value.getBoundingClientRect()
+    const centerDelta = (rect.top + rect.height * 0.5 - window.innerHeight * 0.5) / window.innerHeight
+    stageParallaxY.value = Math.max(-18, Math.min(18, centerDelta * -22))
+  }
+
+  if (!prefersReducedMotion) {
+    window.addEventListener('scroll', onWindowScrollParallax, { passive: true })
+    onWindowScrollParallax()
+  }
+
   if (prefersReducedMotion || !isWebGLSupported()) {
     staticFallback.value = true
+    cleanupFn = () => {
+      window.removeEventListener('scroll', onWindowScrollParallax)
+    }
     return
   }
 
@@ -132,18 +158,27 @@ onMounted(async () => {
     ])
   } catch {
     staticFallback.value = true
+    cleanupFn = () => {
+      window.removeEventListener('scroll', onWindowScrollParallax)
+    }
     return
   }
 
   const stageEl = stageWrapRef.value
   const mountEl = canvasMountRef.value
-  if (!stageEl || !mountEl) return
+  if (!stageEl || !mountEl) {
+    window.removeEventListener('scroll', onWindowScrollParallax)
+    return
+  }
 
   let stage: ReturnType<typeof setupStudioStage>
   try {
     stage = setupStudioStage(THREE, RoomEnvMod.RoomEnvironment, mountEl, currentBackdropMeta.value.hex, 29)
   } catch {
     staticFallback.value = true
+    cleanupFn = () => {
+      window.removeEventListener('scroll', onWindowScrollParallax)
+    }
     return
   }
 
@@ -156,15 +191,19 @@ onMounted(async () => {
   // Slight low-angle longer-lens studio hero framing
   const lookTarget = new THREE.Vector3(0, 0.72, 0.15)
   const baseCamDist = 6.15
-  const baseCamElev = 0.21 // radians (~12 deg)
-  camera.position.set(0, lookTarget.y + Math.sin(baseCamElev) * baseCamDist, lookTarget.z + Math.cos(baseCamElev) * baseCamDist)
+  const baseCamElev = 0.21
+  camera.position.set(
+    0,
+    lookTarget.y + Math.sin(baseCamElev) * baseCamDist,
+    lookTarget.z + Math.cos(baseCamElev) * baseCamDist
+  )
   camera.lookAt(lookTarget)
 
   // Studio turntable holding the 5 hero products
   const turntable = new THREE.Group()
   scene.add(turntable)
 
-  // Shared per-layout CanvasTextures so typing ONLY redraws 2D canvases (never rebuilds geometry!)
+  // Shared per-layout CanvasTextures so typing ONLY redraws 2D canvases
   const sharedTextures = {} as Record<LabelLayout, import('three').CanvasTexture>
   const layouts: LabelLayout[] = ['front', 'wrap', 'card', 'sticker']
 
@@ -292,7 +331,7 @@ onMounted(async () => {
 
   rebuildAllSlots(false)
 
-  // Watchers: debounce brandName 150ms (rebuild ONLY label textures, NEVER geometry per keystroke!)
+  // Watchers: debounce brandName 150ms
   let brandDebounceTimer: ReturnType<typeof setTimeout> | null = null
   const stopWatchBrand = watch(brandName, () => {
     canvas.setAttribute('aria-label', dynamicAriaLabel.value)
@@ -325,7 +364,7 @@ onMounted(async () => {
     stage.setBackdropColor(currentBackdropMeta.value.hex)
   })
 
-  // Showreel timer (swaps center product every 4s, pauses 10s on any user interaction)
+  // Showreel timer (swaps center product every 4s, pauses 10s on user interaction)
   let pauseShowreelUntil = 0
   let lastShowreelSwap = performance.now()
 
@@ -390,9 +429,9 @@ onMounted(async () => {
     projVec.project(camera)
     const w = stageEl.clientWidth
     const h = stageEl.clientHeight
-    hoveredCaption.text = meta ? meta.name.toUpperCase() : slot.productId.toUpperCase()
-    hoveredCaption.x = Math.min(w - 76, Math.max(76, (projVec.x * 0.5 + 0.5) * w))
-    hoveredCaption.y = Math.min(h - 44, Math.max(28, (-projVec.y * 0.5 + 0.5) * h))
+    hoveredCaption.text = meta ? meta.name : slot.productId
+    hoveredCaption.x = Math.min(w - 84, Math.max(84, (projVec.x * 0.5 + 0.5) * w))
+    hoveredCaption.y = Math.min(h - 48, Math.max(32, (-projVec.y * 0.5 + 0.5) * h))
     hoveredCaption.visible = true
   }
 
@@ -425,7 +464,6 @@ onMounted(async () => {
       const dx = e.clientX - downX
       const dy = e.clientY - downY
       if (!dragStarted && Math.hypot(dx, dy) > 6) {
-        // Respect vertical page scroll on touch
         if (e.pointerType === 'touch' && Math.abs(dy) > Math.abs(dx)) {
           pointerDown = false
           return
@@ -493,7 +531,6 @@ onMounted(async () => {
     const dt = Math.min((now - prevTime) / 1000, 0.05)
     prevTime = now
 
-    // Automatic 4s center showreel when idle
     if (now > pauseShowreelUntil && now - lastShowreelSwap >= 4000) {
       lastShowreelSwap = now
       const idx = PRODUCT_CATALOG.findIndex((p) => p.id === productId.value)
@@ -501,7 +538,6 @@ onMounted(async () => {
       productId.value = next.id
     }
 
-    // Smooth damped camera parallax orbit (max 6 degrees)
     currentCamAzimuth += (targetCamAzimuth - currentCamAzimuth) * 0.065
     currentCamElevOffset += (targetCamElevOffset - currentCamElevOffset) * 0.065
     const elev = baseCamElev + currentCamElevOffset
@@ -513,7 +549,6 @@ onMounted(async () => {
     )
     camera.lookAt(lookTarget)
 
-    // Turntable drag inertia
     if (!isDraggingTurntable.value) {
       turntableYaw += turntableVel
       turntableVel *= 0.92
@@ -521,7 +556,6 @@ onMounted(async () => {
     }
     turntable.rotation.y = turntableYaw
 
-    // Per-slot hover lift (0.05) & scale (1.04), click bounce, and showreel swap pop+spin
     for (const s of slots) {
       const targetLift = hoveredSlot === s ? 0.05 : 0
       const targetHoverSc = hoveredSlot === s ? 1.04 : 1.0
@@ -638,6 +672,7 @@ onMounted(async () => {
     io?.disconnect()
     ro?.disconnect()
     window.removeEventListener('resize', onResize)
+    window.removeEventListener('scroll', onWindowScrollParallax)
     document.removeEventListener('visibilitychange', onVisChange)
     canvas.removeEventListener('pointerdown', onPointerDown)
     canvas.removeEventListener('pointermove', onPointerMove)
@@ -665,161 +700,135 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section id="beranda" class="relative py-8 sm:py-12 lg:py-14 px-4 sm:px-6 lg:px-8 overflow-x-clip">
+  <section
+    id="beranda"
+    class="relative pt-10 pb-16 sm:pt-14 sm:pb-24 lg:pt-16 lg:pb-28 px-4 sm:px-6 lg:px-8 overflow-x-clip bg-gradient-to-b from-cream via-sand/55 to-cream"
+  >
+    <!-- Soft Warm Ambient Glow -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[56rem] h-[26rem] rounded-full bg-butter/25 blur-3xl opacity-70"
+    ></div>
+
     <div class="max-w-7xl mx-auto relative">
-      <!-- Floating Neo-Brutalist Stickers Over Frame Edges (CSS Only) -->
-      <div
-        aria-hidden="true"
-        class="hidden sm:inline-flex items-center gap-1.5 absolute -top-4 left-6 z-20 px-3 py-1 bg-cyan border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase -rotate-3 select-none pointer-events-none"
-      >
-        <span>✦ Gratis konsultasi</span>
-      </div>
-      <div
-        aria-hidden="true"
-        class="inline-flex items-center gap-1.5 absolute -top-4 right-4 sm:right-10 z-20 px-3.5 py-1 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-3 select-none pointer-events-none"
-      >
-        <span>Mulai Rp99rb</span>
-      </div>
-      <div
-        aria-hidden="true"
-        class="hidden md:inline-flex items-center gap-1.5 absolute -bottom-4 left-[36%] z-20 px-3.5 py-1 bg-coral text-ink border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-2 select-none pointer-events-none"
-      >
-        <span>File master lengkap</span>
-      </div>
+      <!-- Editorial Headline + Studio Controls Row -->
+      <div class="max-w-5xl mx-auto text-center">
+        <p class="editorial-eyebrow text-terracotta-deep mb-5">
+          Studio Desain Identitas &amp; Kemasan UMKM Indonesia
+        </p>
 
-      <!-- 2px Ink Frame: Left ~42% Copy, Right ~58% Photoreal Studio Stage -->
-      <div class="border-2 border-ink bg-paper shadow-brutal-lg grid grid-cols-1 lg:grid-cols-[42fr_58fr]">
-        <!-- LEFT COPY COLUMN (SSR LCP — renders immediately without waiting for three.js) -->
-        <div class="p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-b-2 lg:border-b-0 lg:border-r-2 border-ink bg-paper">
-          <div>
-            <!-- Mono Label Chip -->
-            <div class="mt-2 sm:mt-0 inline-flex items-center gap-2 px-3 py-1 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase tracking-wider">
-              STUDIO DESAIN UNTUK UMKM
-            </div>
+        <!-- Large Fraunces Editorial Headline (72-96px desktop) -->
+        <h1
+          class="font-display text-[2.65rem] sm:text-6xl lg:text-[4.75rem] xl:text-[5.5rem] 2xl:text-[6rem] font-normal tracking-[-0.03em] leading-[1.02] text-espresso"
+          :class="{ 'hero-words-static': staticFallback }"
+        >
+          <span class="sr-only">
+            Brand-mu, langsung jadi kemasan, identitas, dan kebanggaan nyata.
+          </span>
+          <span aria-hidden="true" aria-live="off">
+            Brand-mu, langsung jadi
+            <br class="hidden sm:inline" />
+            <span class="hero-word-rotator italic font-normal text-terracotta-deep">
+              <span class="hero-word-item hero-word-item-0">kemasan.</span>
+              <span class="hero-word-item hero-word-item-1">identitas.</span>
+              <span class="hero-word-item hero-word-item-2">kebanggaan.</span>
+            </span>
+          </span>
+        </h1>
 
-            <!-- H1 with Rotating Highlight Block on Last Word -->
-            <h1
-              class="mt-4 font-display text-4xl sm:text-5xl xl:text-[3.25rem] font-bold tracking-tight leading-[1.08] text-ink"
-              :class="{ 'hero-words-static': staticFallback }"
-            >
-              <span class="sr-only">
-                Brand-mu, langsung jadi kemasan, identitas, dan produk nyata.
-              </span>
-              <span aria-hidden="true" aria-live="off">
-                Brand-mu, langsung jadi
-                <span class="hero-word-rotator mt-1">
-                  <span class="hero-word-item hero-word-item-0 px-2.5 py-0.5 bg-yellow border-2 border-ink shadow-brutal-sm">
-                    kemasan.
-                  </span>
-                  <span class="hero-word-item hero-word-item-1 px-2.5 py-0.5 bg-cyan border-2 border-ink shadow-brutal-sm">
-                    identitas.
-                  </span>
-                  <span class="hero-word-item hero-word-item-2 px-2.5 py-0.5 bg-coral border-2 border-ink shadow-brutal-sm">
-                    kebanggaan.
-                  </span>
-                </span>
-              </span>
-            </h1>
+        <p class="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-espresso/75 leading-relaxed">
+          Logo berkarakter, kemasan siap cetak, dan konten sosmed yang tenang meyakinkan. Ketik nama usahamu di bawah dan lihat wujudnya langsung di panggung 3D.
+        </p>
 
-            <!-- Short Subcopy -->
-            <p class="mt-4 text-sm sm:text-base text-ink/85 leading-relaxed">
-              Logo, kemasan siap cetak, dan konten sosmed rapi dengan harga UMKM. Coba ketik merek usahamu di bawah untuk melihat hasilnya langsung di studio 3D.
-            </p>
-
-            <!-- Live Brand Input + "Lihat di 3D" Button -->
-            <div class="mt-5 p-4 bg-paper-dark/70 border-2 border-ink shadow-brutal-sm">
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="hero-brand-input" class="font-mono text-xs font-bold uppercase tracking-wider">
-                  Ketik nama brand-mu
-                </label>
-                <span class="font-mono text-[11px] text-ink/70">{{ brandName.length }}/18</span>
-              </div>
-              <div class="flex flex-col sm:flex-row gap-2.5">
-                <input
-                  id="hero-brand-input"
-                  :value="brandName"
-                  type="text"
-                  maxlength="18"
-                  placeholder="KOPI SENJA"
-                  class="flex-1 min-w-0 px-3.5 py-2.5 bg-white border-2 border-ink font-display font-bold text-base focus:outline-none focus:ring-2 focus:ring-indigo"
-                  @input="onBrandInput"
-                />
-                <button
-                  type="button"
-                  class="px-4 py-2.5 bg-coral text-ink border-2 border-ink font-display font-bold text-sm shadow-brutal-sm hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none shrink-0"
-                  @click="handleLihat3D"
-                >
-                  Lihat di 3D
-                </button>
-              </div>
-
-              <!-- 6 Color Swatches -->
-              <div class="mt-3 flex flex-wrap items-center gap-2.5">
-                <span class="font-mono text-[11px] font-bold uppercase text-ink/75 mr-1">Warna:</span>
-                <button
-                  v-for="sw in BRAND_SWATCHES"
-                  :key="sw.hex"
-                  type="button"
-                  :aria-label="`Pilih warna ${sw.name}`"
-                  :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
-                  class="w-7 h-7 border-2 border-ink transition-transform flex items-center justify-center"
-                  :class="
-                    colorHex.toLowerCase() === sw.hex.toLowerCase()
-                      ? 'scale-110 ring-2 ring-indigo ring-offset-1 ring-offset-paper shadow-brutal-sm'
-                      : 'hover:scale-105'
-                  "
-                  :style="{ backgroundColor: sw.hex }"
-                  @click="
-                    colorHex = sw.hex;
-                    pauseShowreelFn?.();
-                  "
-                >
-                  <span
-                    v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
-                    class="text-[10px] font-mono font-bold"
-                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-ink' : 'text-paper'"
-                    aria-hidden="true"
-                  >✓</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Two CTAs -->
-            <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <a
-                href="#harga"
-                class="brutal-btn bg-indigo text-paper px-6 py-3.5 text-sm sm:text-base"
-              >
-                <span>Mulai Proyek</span>
-                <span aria-hidden="true">→</span>
-              </a>
-              <a
-                href="#mixer"
-                class="brutal-btn bg-white text-ink px-6 py-3.5 text-sm sm:text-base"
-              >
-                Coba Brand Mixer
-              </a>
-            </div>
+        <!-- Clean Pill Brand Input + Swatches -->
+        <div class="mt-8 max-w-xl mx-auto">
+          <div class="flex items-center justify-between px-4 mb-2">
+            <label for="hero-brand-input" class="editorial-eyebrow text-espresso/65">
+              Coba Nama Brand-mu
+            </label>
+            <span class="text-xs font-medium text-espresso/55">{{ brandName.length }}/18</span>
           </div>
 
-          <!-- Trust Row -->
-          <div class="mt-7 pt-5 border-t-2 border-ink/15 flex flex-wrap items-center gap-2">
-            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
-              120+ UMKM
-            </span>
-            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
-              7 hari kerja
-            </span>
-            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
-              Revisi 3x
-            </span>
+          <div
+            class="p-1.5 pl-5 rounded-full bg-cream border border-espresso/15 shadow-editorial flex items-center gap-2 focus-within:border-terracotta transition-colors duration-300"
+          >
+            <input
+              id="hero-brand-input"
+              :value="brandName"
+              type="text"
+              maxlength="18"
+              placeholder="KOPI SENJA"
+              class="flex-1 min-w-0 py-2 bg-transparent font-display text-lg sm:text-xl font-medium tracking-tight text-espresso placeholder:text-espresso/35 focus:outline-none"
+              @input="onBrandInput"
+            />
+            <button
+              type="button"
+              class="pill-btn-primary px-5 py-2.5 text-sm shrink-0"
+              @click="handleLihat3D"
+            >
+              Lihat di 3D
+            </button>
+          </div>
+
+          <!-- Soft Ring Color Swatches -->
+          <div class="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+            <span class="editorial-eyebrow text-espresso/60 mr-1">Palet:</span>
+            <button
+              v-for="sw in BRAND_SWATCHES"
+              :key="sw.hex"
+              type="button"
+              :aria-label="`Pilih warna ${sw.name}`"
+              :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
+              class="w-7 h-7 rounded-full border border-espresso/15 flex items-center justify-center transition-all duration-300 ease-editorial"
+              :class="
+                colorHex.toLowerCase() === sw.hex.toLowerCase()
+                  ? 'scale-110 ring-2 ring-terracotta ring-offset-2 ring-offset-cream shadow-editorial-sm'
+                  : 'hover:scale-105'
+              "
+              :style="{ backgroundColor: sw.hex }"
+              @click="
+                colorHex = sw.hex;
+                pauseShowreelFn?.();
+              "
+            >
+              <span
+                v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
+                class="text-[10px] font-semibold"
+                :class="isLightSwatch(sw.hex) ? 'text-espresso' : 'text-cream'"
+                aria-hidden="true"
+              >✓</span>
+            </button>
           </div>
         </div>
 
-        <!-- RIGHT STAGE COLUMN (~58% Desktop, 380px Mobile reserved height for zero CLS) -->
+        <!-- Editorial Pill CTAs & Subtle Studio Proof -->
+        <div class="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3.5">
+          <a href="#harga" class="pill-btn-primary px-7 py-3.5 text-sm sm:text-base">
+            <span>Mulai Proyek</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a href="#mixer" class="pill-btn-secondary px-7 py-3.5 text-sm sm:text-base">
+            Eksplorasi Brand Mixer
+          </a>
+        </div>
+
+        <div class="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm text-espresso/65">
+          <span>120+ Brand UMKM</span>
+          <span class="text-terracotta" aria-hidden="true">·</span>
+          <span>Selesai 2–4 Hari Kerja</span>
+          <span class="text-terracotta" aria-hidden="true">·</span>
+          <span>3x Revisi Terarah &amp; File Master</span>
+        </div>
+      </div>
+
+      <!-- Large Rounded 3D Product Showcase Stage with Parallax -->
+      <div
+        class="mt-10 sm:mt-14 transition-transform duration-300 ease-out will-change-transform"
+        :style="{ transform: `translate3d(0, ${stageParallaxY}px, 0)` }"
+      >
         <div
           ref="stageWrapRef"
-          class="relative h-[380px] sm:h-[450px] lg:h-auto lg:min-h-[600px] overflow-hidden select-none bg-[#EAE5DC]"
+          class="relative w-full h-[390px] sm:h-[490px] lg:h-[580px] rounded-[28px] border border-espresso/10 shadow-editorial-lg overflow-hidden select-none bg-sand"
         >
           <!-- Semi-Realistic Vector Fallback (SSR + Reduced Motion + No WebGL) with Live Reactive <text> -->
           <div
@@ -836,18 +845,18 @@ onBeforeUnmount(() => {
                 <linearGradient id="heroFallbackCyc" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" :stop-color="currentBackdropMeta.hex" />
                   <stop offset="66%" :stop-color="currentBackdropMeta.hex" />
-                  <stop offset="78%" stop-color="#D9D3C7" />
+                  <stop offset="78%" stop-color="#DDD5C7" />
                   <stop offset="100%" :stop-color="currentBackdropMeta.hex" />
                 </linearGradient>
                 <radialGradient id="heroFallbackShadow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#0B0B0F" stop-opacity="0.34" />
-                  <stop offset="55%" stop-color="#0B0B0F" stop-opacity="0.14" />
-                  <stop offset="100%" stop-color="#0B0B0F" stop-opacity="0" />
+                  <stop offset="0%" stop-color="#1F1A17" stop-opacity="0.28" />
+                  <stop offset="55%" stop-color="#1F1A17" stop-opacity="0.11" />
+                  <stop offset="100%" stop-color="#1F1A17" stop-opacity="0" />
                 </radialGradient>
                 <linearGradient id="heroFallbackPouch" x1="0" y1="0" x2="1" y2="0.2">
-                  <stop offset="0%" stop-color="#FAF7F1" />
-                  <stop offset="48%" stop-color="#F1ECE1" />
-                  <stop offset="100%" stop-color="#DAD2C3" />
+                  <stop offset="0%" stop-color="#FAF7F2" />
+                  <stop offset="48%" stop-color="#F1EAE0" />
+                  <stop offset="100%" stop-color="#DAD1C2" />
                 </linearGradient>
                 <linearGradient id="heroFallbackGlass" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stop-color="#4A2718" />
@@ -865,40 +874,40 @@ onBeforeUnmount(() => {
               <!-- Cup -->
               <g transform="translate(132, 182)">
                 <line x1="68" y1="-34" x2="58" y2="42" :stroke="colorHex" stroke-width="10" stroke-linecap="round" />
-                <polygon points="14,54 114,54 98,248 30,248" fill="#F5F1E9" />
+                <polygon points="14,54 114,54 98,248 30,248" fill="#FAF7F2" />
                 <polygon points="18,98 110,98 103,196 25,196" :fill="colorHex" />
-                <text x="64" y="152" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#FAF7F0">
+                <text x="64" y="152" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="13" font-weight="600" fill="#FAF7F2">
                   {{ displayBrand.slice(0, 12) }}
                 </text>
                 <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.84" />
-                <rect x="6" y="48" width="116" height="10" rx="5" fill="#E6E1D8" />
+                <rect x="6" y="48" width="116" height="10" rx="5" fill="#EBE4DA" />
               </g>
 
               <!-- Bottle -->
               <g transform="translate(514, 132)">
-                <rect x="36" y="0" width="36" height="32" rx="4" fill="#1F2026" />
+                <rect x="36" y="0" width="36" height="32" rx="4" fill="#1F1A17" />
                 <path d="M40,32 L40,78 C40,104 12,118 12,150 L12,292 C12,300 20,304 54,304 C88,304 96,300 96,292 L96,150 C96,118 68,104 68,78 L68,32 Z" fill="url(#heroFallbackGlass)" />
                 <rect x="22" y="146" width="8" height="142" rx="4" fill="#FFFFFF" fill-opacity="0.3" />
-                <rect x="12" y="168" width="84" height="102" fill="#FAF7F0" />
-                <rect x="18" y="176" width="72" height="6" :fill="colorHex" />
-                <text x="54" y="224" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="11" font-weight="700" fill="#181715">
+                <rect x="12" y="168" width="84" height="102" rx="3" fill="#FAF7F2" />
+                <rect x="18" y="176" width="72" height="5" :fill="colorHex" />
+                <text x="54" y="224" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="11" font-weight="600" fill="#1F1A17">
                   {{ displayBrand.slice(0, 12) }}
                 </text>
-                <text x="54" y="244" text-anchor="middle" font-family="monospace" font-size="8" fill="#6E6A63">250ML STUDIO</text>
+                <text x="54" y="244" text-anchor="middle" font-family="Inter, sans-serif" font-size="7.5" letter-spacing="1" fill="#6E655E">250ML STUDIO</text>
               </g>
 
               <!-- Center Standing Pouch -->
               <g transform="translate(274, 108)">
                 <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#heroFallbackPouch)" />
-                <line x1="18" y1="38" x2="194" y2="38" stroke="#D2C9BA" stroke-width="4" />
-                <rect x="28" y="64" width="156" height="224" rx="4" fill="#FAF8F3" />
-                <rect x="42" y="80" width="128" height="8" :fill="colorHex" />
-                <circle cx="106" cy="142" r="20" fill="none" stroke="#181715" stroke-width="4" stroke-dasharray="95 35" />
-                <circle cx="106" cy="142" r="6" :fill="colorHex" />
-                <text x="106" y="204" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="18" font-weight="700" fill="#181715">
+                <line x1="18" y1="38" x2="194" y2="38" stroke="#D4CABB" stroke-width="3.5" />
+                <rect x="28" y="64" width="156" height="224" rx="8" fill="#FAF7F2" />
+                <rect x="42" y="80" width="128" height="6" :fill="colorHex" />
+                <path d="M92 153 A18 18 0 1 1 120 153" fill="none" :stroke="colorHex" stroke-width="3.8" stroke-linecap="round" />
+                <circle cx="106" cy="142" r="4.5" :fill="colorHex" />
+                <text x="106" y="204" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="18" font-weight="600" fill="#1F1A17">
                   {{ displayBrand }}
                 </text>
-                <text x="106" y="228" text-anchor="middle" font-family="monospace" font-size="10" fill="#57534E">PRODUK PILIHAN · 250G</text>
+                <text x="106" y="228" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="1.2" fill="#5E564F">PRODUK PILIHAN · 250G</text>
               </g>
             </svg>
           </div>
@@ -920,63 +929,78 @@ onBeforeUnmount(() => {
             ></div>
           </ClientOnly>
 
-          <!-- Subtle Studio Vignette Overlay (CSS Only) -->
+          <!-- Soft Warm Vignette Overlay -->
           <div
             aria-hidden="true"
-            class="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(11,11,15,0.14)]"
+            class="pointer-events-none absolute inset-0 shadow-[inset_0_0_90px_rgba(31,26,23,0.10)]"
           ></div>
 
           <!-- Camera Flash Overlay on "Foto!" -->
           <div
             aria-hidden="true"
-            class="pointer-events-none absolute inset-0 bg-white z-30 transition-opacity duration-300"
+            class="pointer-events-none absolute inset-0 bg-cream z-30 transition-opacity duration-300"
             :class="cameraFlashActive ? 'opacity-90' : 'opacity-0'"
           ></div>
 
-          <!-- Following Brutalist Caption Tag on Hover -->
+          <!-- Floating Editorial Caption Pill on Hover -->
           <div
             v-if="hoveredCaption.visible && sceneReady && !staticFallback"
             aria-hidden="true"
-            class="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full px-2.5 py-1 bg-yellow text-ink border-2 border-ink font-mono text-[11px] font-bold uppercase tracking-wider shadow-brutal-sm"
+            class="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full px-3.5 py-1.5 rounded-full bg-cream/92 backdrop-blur-md text-espresso border border-espresso/10 text-xs font-medium tracking-wide shadow-editorial-sm"
             :style="{ left: `${hoveredCaption.x}px`, top: `${hoveredCaption.y}px` }"
           >
             {{ hoveredCaption.text }}
           </div>
 
-          <!-- Top-Right "Foto!" & "Ganti warna" Neo-Brutalist Controls -->
+          <!-- Top-Left Studio Hint + Top-Right "Ganti warna" & "Foto!" Pill Controls -->
           <div
             v-if="sceneReady && !staticFallback"
-            class="absolute top-3 right-3 z-20 flex items-center gap-2"
+            class="absolute top-4 inset-x-4 z-20 flex items-center justify-between gap-2 pointer-events-none"
           >
-            <button
-              type="button"
-              class="px-3 py-1.5 bg-paper hover:bg-yellow border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-              @click="handleCycleColor"
-            >
-              Ganti warna
-            </button>
-            <button
-              type="button"
-              class="px-3 py-1.5 bg-yellow hover:bg-cyan border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-              @click="handleTakePhoto"
-            >
-              📸 Foto!
-            </button>
+            <div class="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cream/85 backdrop-blur-md border border-espresso/10 text-xs text-espresso/75">
+              <span class="w-1.5 h-1.5 rounded-full bg-terracotta" aria-hidden="true"></span>
+              <span>Geser panggung · Klik produk untuk fokus</span>
+            </div>
+
+            <div class="ml-auto flex items-center gap-2 pointer-events-auto">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-full bg-cream/90 hover:bg-cream backdrop-blur-md border border-espresso/10 text-xs font-medium text-espresso shadow-editorial-sm transition-all duration-300 ease-editorial hover:-translate-y-0.5"
+                @click="handleCycleColor"
+              >
+                Ganti warna
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 rounded-full bg-espresso text-cream hover:bg-terracotta-deep text-xs font-medium shadow-editorial-sm transition-all duration-300 ease-editorial hover:-translate-y-0.5"
+                @click="handleTakePhoto"
+              >
+                Foto!
+              </button>
+            </div>
           </div>
 
-          <!-- Bottom Accessible Product Switcher Tabs -->
+          <!-- Bottom Accessible Product Switcher Pill Tabs -->
           <div
             v-if="sceneReady && !staticFallback"
-            class="absolute bottom-3 inset-x-3 z-20 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5"
+            class="absolute bottom-4 inset-x-4 z-20 flex items-center justify-center overflow-x-auto no-scrollbar py-0.5"
           >
-            <div class="flex items-center gap-1.5" role="group" aria-label="Pilih produk tengah di studio">
+            <div
+              class="inline-flex items-center gap-1 p-1 rounded-full bg-cream/88 backdrop-blur-md border border-espresso/10 shadow-editorial-sm"
+              role="group"
+              aria-label="Pilih produk tengah di studio"
+            >
               <button
                 v-for="prod in heroTabProducts"
                 :key="prod.id"
                 type="button"
                 :aria-pressed="productId === prod.id ? 'true' : 'false'"
-                class="px-2.5 py-1 border-2 border-ink font-mono text-[11px] font-bold shrink-0 transition-colors shadow-brutal-sm"
-                :class="productId === prod.id ? 'bg-ink text-paper' : 'bg-paper/95 text-ink hover:bg-yellow'"
+                class="px-3.5 py-1.5 rounded-full text-xs font-medium shrink-0 transition-all duration-300 ease-editorial"
+                :class="
+                  productId === prod.id
+                    ? 'bg-espresso text-cream shadow-sm'
+                    : 'text-espresso/75 hover:text-espresso hover:bg-sand/70'
+                "
                 @click="selectHeroProduct(prod.id)"
               >
                 {{ prod.shortName }}

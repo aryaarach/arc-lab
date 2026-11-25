@@ -64,7 +64,7 @@ function hexLuminance(hex: string): number {
 }
 
 function contrastInk(hex: string): string {
-  return hexLuminance(hex) > 0.56 ? '#171614' : '#FAF7F0'
+  return hexLuminance(hex) > 0.56 ? '#1F1A17' : '#FAF7F2'
 }
 
 function splitBrandLines(raw: string): [string, string] {
@@ -146,17 +146,17 @@ function drawCoreFace(
 
   if (vibe === 'Minimalis') {
     // Warm editorial cotton paper stock
-    ctx.fillStyle = '#F8F5EE'
+    ctx.fillStyle = '#FAF7F2'
     ctx.fillRect(ox, oy, fw, fh)
 
-    // Subtle accent band at top or bottom
+    // Subtle accent band at top
     const pad = fw * 0.085
     ctx.fillStyle = colorHex
-    ctx.fillRect(ox + pad, oy + pad, fw - pad * 2, fh * 0.032)
+    ctx.fillRect(ox + pad, oy + pad, fw - pad * 2, fh * 0.03)
 
     // Hairline editorial grid rules
-    ctx.strokeStyle = 'rgba(23, 22, 20, 0.22)'
-    ctx.lineWidth = Math.max(1.5, fw * 0.0025)
+    ctx.strokeStyle = 'rgba(31, 26, 23, 0.18)'
+    ctx.lineWidth = Math.max(1.5, fw * 0.0022)
     ctx.beginPath()
     ctx.moveTo(ox + pad, oy + fh * 0.22)
     ctx.lineTo(ox + fw - pad, oy + fh * 0.22)
@@ -165,21 +165,21 @@ function drawCoreFace(
     ctx.stroke()
 
     // Micro studio header
-    ctx.fillStyle = '#22201D'
-    ctx.font = `600 ${Math.round(fw * 0.026)}px "JetBrains Mono", monospace`
+    ctx.fillStyle = '#1F1A17'
+    ctx.font = `600 ${Math.round(fw * 0.025)}px "Inter", system-ui, sans-serif`
     ctx.textAlign = 'left'
     ctx.fillText('PRODUK PILIHAN', ox + pad, oy + fh * 0.185)
     ctx.textAlign = 'right'
-    ctx.fillText('NO. 01 / IDN', ox + fw - pad, oy + fh * 0.185)
+    ctx.fillText('NO. 01 · IDN', ox + fw - pad, oy + fh * 0.185)
 
     // Clean brand mark
-    drawArcBrandMark(ctx, cx, oy + fh * (compact ? 0.36 : 0.38), fw * 0.068, '#1B1A18', colorHex)
+    drawArcBrandMark(ctx, cx, oy + fh * (compact ? 0.36 : 0.38), fw * 0.068, '#1F1A17', colorHex)
 
-    // Editorial Typography
-    ctx.fillStyle = '#161514'
+    // Editorial Serif Typography
+    ctx.fillStyle = '#1F1A17'
     ctx.textAlign = 'center'
     const fontSize = Math.round(fw * (line2 ? 0.095 : 0.105))
-    ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`
+    ctx.font = `600 ${fontSize}px "Fraunces", Georgia, serif`
     if (line2) {
       ctx.fillText(line1, cx, oy + fh * 0.56, fw - pad * 2.2)
       ctx.fillText(line2, cx, oy + fh * 0.675, fw - pad * 2.2)
@@ -188,18 +188,18 @@ function drawCoreFace(
     }
 
     if (!compact) {
-      ctx.fillStyle = 'rgba(23, 22, 20, 0.65)'
-      ctx.font = `500 ${Math.round(fw * 0.027)}px "Inter", sans-serif`
+      ctx.fillStyle = 'rgba(31, 26, 23, 0.65)'
+      ctx.font = `500 ${Math.round(fw * 0.027)}px "Inter", system-ui, sans-serif`
       ctx.fillText('Diracik dengan bahan pilihan berkualitas tinggi', cx, oy + fh * 0.735)
     }
 
     // Bottom specs
-    ctx.fillStyle = '#22201D'
-    ctx.font = `600 ${Math.round(fw * 0.025)}px "JetBrains Mono", monospace`
+    ctx.fillStyle = '#1F1A17'
+    ctx.font = `600 ${Math.round(fw * 0.024)}px "Inter", system-ui, sans-serif`
     ctx.textAlign = 'left'
     ctx.fillText('BERAT BERSIH 250G', ox + pad, oy + fh * 0.855)
     ctx.textAlign = 'right'
-    ctx.fillStyle = colorHex === '#FFD84D' ? '#1B1A18' : colorHex
+    ctx.fillStyle = colorHex === '#FFD84D' || colorHex === '#F2D98D' ? '#1F1A17' : colorHex
     ctx.fillText('KUALITAS UTAMA', ox + fw - pad, oy + fh * 0.855)
   } else if (vibe === 'Playful') {
     // Rich full-bleed color stock with arched cream window
@@ -207,7 +207,7 @@ function drawCoreFace(
     ctx.fillRect(ox, oy, fw, fh)
 
     // Subtle organic botanical circles in background tone
-    ctx.fillStyle = onColor === '#FAF7F0' ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)'
+    ctx.fillStyle = onColor === '#FAF7F2' ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)'
     ctx.beginPath()
     ctx.arc(ox + fw * 0.15, oy + fh * 0.18, fw * 0.22, 0, Math.PI * 2)
     ctx.arc(ox + fw * 0.88, oy + fh * 0.82, fw * 0.26, 0, Math.PI * 2)
@@ -220,7 +220,7 @@ function drawCoreFace(
     const wy = oy + (fh - winH) * 0.52
     const archR = winW * 0.42
 
-    ctx.fillStyle = '#FAF6EC'
+    ctx.fillStyle = '#FAF7F2'
     drawRoundedRect(ctx, wx, wy, winW, winH, archR * 0.45)
     ctx.fill()
 
@@ -233,21 +233,21 @@ function drawCoreFace(
     // Playful pill tag
     const pillW = fw * 0.36
     const pillH = fh * 0.062
-    ctx.fillStyle = '#191816'
+    ctx.fillStyle = '#1F1A17'
     drawRoundedRect(ctx, cx - pillW * 0.5, wy + winH * 0.12, pillW, pillH, pillH * 0.5)
     ctx.fill()
-    ctx.fillStyle = '#FAF6EC'
+    ctx.fillStyle = '#FAF7F2'
     ctx.textAlign = 'center'
-    ctx.font = `600 ${Math.round(fw * 0.024)}px "JetBrains Mono", monospace`
+    ctx.font = `600 ${Math.round(fw * 0.023)}px "Inter", system-ui, sans-serif`
     ctx.fillText('RASA ASLI LOKAL', cx, wy + winH * 0.162)
 
     // Playful geometric emblem
-    drawArcBrandMark(ctx, cx, wy + winH * 0.34, fw * 0.065, colorHex, '#191816')
+    drawArcBrandMark(ctx, cx, wy + winH * 0.34, fw * 0.065, colorHex, '#1F1A17')
 
     // Bold expressive brand name
-    ctx.fillStyle = '#191816'
+    ctx.fillStyle = '#1F1A17'
     const fontSize = Math.round(fw * (line2 ? 0.096 : 0.106))
-    ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`
+    ctx.font = `700 ${fontSize}px "Fraunces", Georgia, serif`
     if (line2) {
       ctx.fillText(line1, cx, wy + winH * 0.57, winW * 0.84)
       ctx.fillText(line2, cx, wy + winH * 0.71, winW * 0.84)
@@ -256,13 +256,13 @@ function drawCoreFace(
     }
 
     if (!compact) {
-      ctx.fillStyle = '#4A4640'
-      ctx.font = `600 ${Math.round(fw * 0.026)}px "Inter", sans-serif`
+      ctx.fillStyle = '#4A433D'
+      ctx.font = `500 ${Math.round(fw * 0.026)}px "Inter", system-ui, sans-serif`
       ctx.fillText('Segar · Alami · Siap Menemani Harimu', cx, wy + winH * 0.85)
     }
   } else if (vibe === 'Premium') {
-    // Deep matte obsidian stock with champagne foil & accent trim
-    ctx.fillStyle = '#161619'
+    // Deep matte espresso-obsidian stock with champagne foil & accent trim
+    ctx.fillStyle = '#1F1A17'
     ctx.fillRect(ox, oy, fw, fh)
 
     // Subtle top/bottom color silk ribbon
@@ -271,7 +271,7 @@ function drawCoreFace(
     ctx.fillRect(ox, oy + fh * 0.972, fw, fh * 0.028)
 
     const pad = fw * 0.09
-    const gold = '#D6B676'
+    const gold = '#D8BA7C'
     ctx.strokeStyle = gold
     ctx.lineWidth = Math.max(1.5, fw * 0.003)
     ctx.strokeRect(ox + pad, oy + pad, fw - pad * 2, fh - pad * 2)
@@ -283,13 +283,13 @@ function drawCoreFace(
 
     ctx.fillStyle = gold
     ctx.textAlign = 'center'
-    ctx.font = `600 ${Math.round(fw * 0.024)}px "JetBrains Mono", monospace`
+    ctx.font = `600 ${Math.round(fw * 0.023)}px "Inter", system-ui, sans-serif`
     ctx.fillText('EDISI ARTISAN TERBATAS', cx, oy + fh * 0.45)
 
     // Crisp ivory brand name
-    ctx.fillStyle = '#F6F2E9'
+    ctx.fillStyle = '#FAF7F2'
     const fontSize = Math.round(fw * (line2 ? 0.09 : 0.1))
-    ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`
+    ctx.font = `600 ${fontSize}px "Fraunces", Georgia, serif`
     if (line2) {
       ctx.fillText(line1, cx, oy + fh * 0.585, fw - pad * 3)
       ctx.fillText(line2, cx, oy + fh * 0.695, fw - pad * 3)
@@ -305,40 +305,40 @@ function drawCoreFace(
     ctx.stroke()
 
     if (!compact) {
-      ctx.fillStyle = 'rgba(246, 242, 233, 0.72)'
-      ctx.font = `500 ${Math.round(fw * 0.024)}px "JetBrains Mono", monospace`
+      ctx.fillStyle = 'rgba(250, 247, 242, 0.72)'
+      ctx.font = `500 ${Math.round(fw * 0.023)}px "Inter", system-ui, sans-serif`
       ctx.fillText('KUALITAS EKSPOR · INDONESIA', cx, oy + fh * 0.83)
     }
   } else {
-    // Retro Heritage Cream Stock with Warm Banding
-    ctx.fillStyle = '#F2E7D3'
+    // Retro Heritage Sand Stock with Warm Banding
+    ctx.fillStyle = '#EFE8DC'
     ctx.fillRect(ox, oy, fw, fh)
 
     const pad = fw * 0.075
     // Heritage triple stripe band across middle
     ctx.fillStyle = colorHex
     ctx.fillRect(ox + pad, oy + fh * 0.46, fw - pad * 2, fh * 0.24)
-    ctx.fillStyle = '#26211D'
+    ctx.fillStyle = '#1F1A17'
     ctx.fillRect(ox + pad, oy + fh * 0.44, fw - pad * 2, fh * 0.012)
     ctx.fillRect(ox + pad, oy + fh * 0.708, fw - pad * 2, fh * 0.012)
 
     // Vintage apothecary outer frame
-    ctx.strokeStyle = '#26211D'
-    ctx.lineWidth = Math.max(2.5, fw * 0.0055)
+    ctx.strokeStyle = '#1F1A17'
+    ctx.lineWidth = Math.max(2.5, fw * 0.005)
     drawRoundedRect(ctx, ox + pad, oy + pad, fw - pad * 2, fh - pad * 2, fw * 0.03)
     ctx.stroke()
 
-    ctx.fillStyle = '#26211D'
+    ctx.fillStyle = '#1F1A17'
     ctx.textAlign = 'center'
-    ctx.font = `700 ${Math.round(fw * 0.027)}px "JetBrains Mono", monospace`
+    ctx.font = `600 ${Math.round(fw * 0.025)}px "Inter", system-ui, sans-serif`
     ctx.fillText('RESEP WARISAN NUSANTARA', cx, oy + fh * 0.19)
 
-    drawArcBrandMark(ctx, cx, oy + fh * 0.31, fw * 0.056, '#26211D', colorHex)
+    drawArcBrandMark(ctx, cx, oy + fh * 0.31, fw * 0.056, '#1F1A17', colorHex)
 
     // Brand name inside color band
     ctx.fillStyle = onColor
     const fontSize = Math.round(fw * (line2 ? 0.088 : 0.102))
-    ctx.font = `700 ${fontSize}px "Space Grotesk", sans-serif`
+    ctx.font = `700 ${fontSize}px "Fraunces", Georgia, serif`
     if (line2) {
       ctx.fillText(line1, cx, oy + fh * 0.565, fw - pad * 2.6)
       ctx.fillText(line2, cx, oy + fh * 0.665, fw - pad * 2.6)
@@ -346,8 +346,8 @@ function drawCoreFace(
       ctx.fillText(line1, cx, oy + fh * 0.615, fw - pad * 2.6)
     }
 
-    ctx.fillStyle = '#26211D'
-    ctx.font = `700 ${Math.round(fw * 0.026)}px "JetBrains Mono", monospace`
+    ctx.fillStyle = '#1F1A17'
+    ctx.font = `600 ${Math.round(fw * 0.025)}px "Inter", system-ui, sans-serif`
     ctx.fillText('SEJAK 2026 · 100% OTENTIK', cx, oy + fh * 0.83)
   }
 
@@ -377,11 +377,11 @@ export async function drawLabel(
     // Base seamless band background matching vibe
     const baseBg =
       vibe === 'Minimalis'
-        ? '#F8F5EE'
+        ? '#FAF7F2'
         : vibe === 'Premium'
-          ? '#161619'
+          ? '#1F1A17'
           : vibe === 'Retro'
-            ? '#F2E7D3'
+            ? '#EFE8DC'
             : colorHex
     ctx.fillStyle = baseBg
     ctx.fillRect(0, 0, W, H)
@@ -391,14 +391,14 @@ export async function drawLabel(
     drawCoreFace(ctx, (W - fw) * 0.5, 0, fw, H, brand, vibe, colorHex, false)
 
     // Realistic back packaging info & barcode on left/right wings
-    const ink = vibe === 'Premium' ? '#E5E0D5' : vibe === 'Playful' ? contrastInk(colorHex) : '#262320'
+    const ink = vibe === 'Premium' ? '#E8E0D4' : vibe === 'Playful' ? contrastInk(colorHex) : '#2A231F'
     ctx.fillStyle = ink
     ctx.globalAlpha = 0.78
     const bx = W * 0.06
     const by = H * 0.2
-    ctx.font = `600 ${Math.max(10, Math.round(H * 0.028))}px "JetBrains Mono", monospace`
+    ctx.font = `600 ${Math.max(10, Math.round(H * 0.026))}px "Inter", system-ui, sans-serif`
     ctx.fillText('KOMPOSISI & INFORMASI PRODUK', bx, by)
-    ctx.font = `400 ${Math.max(9, Math.round(H * 0.024))}px "Inter", sans-serif`
+    ctx.font = `400 ${Math.max(9, Math.round(H * 0.024))}px "Inter", system-ui, sans-serif`
     ctx.fillText('Diproduksi secara higienis oleh UMKM', bx, by + H * 0.055)
     ctx.fillText('Indonesia. Simpan di tempat sejuk.', bx, by + H * 0.095)
 
@@ -408,9 +408,9 @@ export async function drawLabel(
     const barW = W * 0.11
     const barH = H * 0.22
     ctx.globalAlpha = 1
-    ctx.fillStyle = '#FAF8F4'
+    ctx.fillStyle = '#FAF7F2'
     ctx.fillRect(barX - 8, barY - 8, barW + 16, barH + 16)
-    ctx.fillStyle = '#18181A'
+    ctx.fillStyle = '#1F1A17'
     for (let i = 0; i < 24; i++) {
       const lw = (i % 3 === 0 ? 3.5 : 1.5) * sizeScale
       ctx.fillRect(barX + i * (barW / 24), barY, lw, barH)
@@ -433,36 +433,36 @@ export async function drawLabel(
     const fullBrand = line2 ? `${line1} ${line2}` : line1
 
     if (vibe === 'Premium') {
-      ctx.fillStyle = '#17171B'
+      ctx.fillStyle = '#1F1A17'
       ctx.fillRect(0, 0, W, H)
-      ctx.strokeStyle = '#D6B676'
+      ctx.strokeStyle = '#D8BA7C'
       ctx.lineWidth = Math.max(2, W * 0.003)
       ctx.strokeRect(W * 0.045, H * 0.075, W * 0.91, H * 0.85)
     } else if (vibe === 'Playful') {
       ctx.fillStyle = colorHex
       ctx.fillRect(0, 0, W, H)
-      ctx.fillStyle = '#FAF7F0'
+      ctx.fillStyle = '#FAF7F2'
       drawRoundedRect(ctx, W * 0.05, H * 0.08, W * 0.9, H * 0.84, W * 0.025)
       ctx.fill()
     } else {
-      ctx.fillStyle = vibe === 'Retro' ? '#F2E7D3' : '#FAF8F3'
+      ctx.fillStyle = vibe === 'Retro' ? '#EFE8DC' : '#FAF7F2'
       ctx.fillRect(0, 0, W, H)
       ctx.fillStyle = colorHex
       ctx.fillRect(0, 0, W * 0.032, H)
     }
 
-    const fg = vibe === 'Premium' ? '#F6F2E9' : '#181715'
-    const subFg = vibe === 'Premium' ? '#D6B676' : '#57534E'
+    const fg = vibe === 'Premium' ? '#FAF7F2' : '#1F1A17'
+    const subFg = vibe === 'Premium' ? '#D8BA7C' : '#5C534C'
 
-    drawArcBrandMark(ctx, W * 0.14, H * 0.3, W * 0.052, vibe === 'Premium' ? '#D6B676' : colorHex, fg)
+    drawArcBrandMark(ctx, W * 0.14, H * 0.3, W * 0.052, vibe === 'Premium' ? '#D8BA7C' : colorHex, fg)
 
     ctx.textAlign = 'left'
     ctx.fillStyle = fg
-    ctx.font = `700 ${Math.round(W * 0.068)}px "Space Grotesk", sans-serif`
+    ctx.font = `600 ${Math.round(W * 0.068)}px "Fraunces", Georgia, serif`
     ctx.fillText(fullBrand, W * 0.09, H * 0.62, W * 0.82)
 
     ctx.fillStyle = subFg
-    ctx.font = `500 ${Math.round(W * 0.024)}px "JetBrains Mono", monospace`
+    ctx.font = `500 ${Math.round(W * 0.023)}px "Inter", system-ui, sans-serif`
     ctx.fillText('PRODUK LOKAL INDONESIA  ·  @BRAND.ID  ·  +62 812-3456-7890', W * 0.09, H * 0.78, W * 0.82)
 
     applyPaperGrain(ctx, W, H, 0.055)
@@ -479,13 +479,12 @@ export async function drawLabel(
     if (!ctx) return canvas
 
     // Backing release liner sheet
-    ctx.fillStyle = '#EFECE4'
+    ctx.fillStyle = '#EFE8DC'
     ctx.fillRect(0, 0, W, H)
 
     // Subtle sheet header strip
-    ctx.fillStyle = '#8A857B'
-    ctx.font = `600 ${Math.round(W * 0.02)}px "JetBrains Mono", monospace`
-    ctx.textAlign = 'between' as CanvasTextAlign
+    ctx.fillStyle = '#7C7268'
+    ctx.font = `600 ${Math.round(W * 0.02)}px "Inter", system-ui, sans-serif`
     ctx.textAlign = 'left'
     ctx.fillText('ARC LAB KISS-CUT VINYL SHEET', W * 0.07, H * 0.055)
 
@@ -498,8 +497,7 @@ export async function drawLabel(
 
     const drawDieCutOutline = (drawShape: () => void, fill: string) => {
       ctx.save()
-      // Subtle kiss-cut shadow line
-      ctx.shadowColor = 'rgba(0,0,0,0.12)'
+      ctx.shadowColor = 'rgba(31,26,23,0.12)'
       ctx.shadowBlur = 8 * sizeScale
       ctx.shadowOffsetY = 2 * sizeScale
       drawShape()
@@ -510,7 +508,7 @@ export async function drawLabel(
       ctx.save()
       drawShape()
       ctx.lineWidth = Math.max(1.5, 2 * sizeScale)
-      ctx.strokeStyle = 'rgba(0,0,0,0.14)'
+      ctx.strokeStyle = 'rgba(31,26,23,0.12)'
       ctx.stroke()
       ctx.restore()
 
@@ -534,7 +532,7 @@ export async function drawLabel(
     drawArcBrandMark(ctx, cols[0], rows[0] - r1 * 0.18, r1 * 0.34, onCol, onCol)
     ctx.fillStyle = onCol
     ctx.textAlign = 'center'
-    ctx.font = `700 ${Math.round(W * 0.032)}px "Space Grotesk", sans-serif`
+    ctx.font = `600 ${Math.round(W * 0.032)}px "Fraunces", Georgia, serif`
     ctx.fillText(shortBrand, cols[0], rows[0] + r1 * 0.48, r1 * 1.65)
 
     // Sticker 2: Pill Wordmark
@@ -543,11 +541,11 @@ export async function drawLabel(
     drawDieCutOutline(() => {
       drawRoundedRect(ctx, cols[1] - pw * 0.5 - 12, rows[0] - ph * 0.5 - 12, pw + 24, ph + 24, (ph + 24) * 0.5)
     }, '#FFFFFF')
-    ctx.fillStyle = '#18181C'
+    ctx.fillStyle = '#1F1A17'
     drawRoundedRect(ctx, cols[1] - pw * 0.5, rows[0] - ph * 0.5, pw, ph, ph * 0.5)
     ctx.fill()
-    ctx.fillStyle = '#FAF7F0'
-    ctx.font = `700 ${Math.round(W * 0.036)}px "Space Grotesk", sans-serif`
+    ctx.fillStyle = '#FAF7F2'
+    ctx.font = `600 ${Math.round(W * 0.036)}px "Fraunces", Georgia, serif`
     ctx.fillText(line2 ? `${line1} ${line2}` : line1, cols[1], rows[0] + W * 0.013, pw * 0.84)
 
     // Sticker 3: Rounded Square Mini Label
@@ -564,14 +562,14 @@ export async function drawLabel(
       ctx.beginPath()
       ctx.ellipse(cols[1], rows[1], ow * 0.5 + 12, oh * 0.5 + 12, 0, 0, Math.PI * 2)
     }, '#FFFFFF')
-    ctx.fillStyle = vibe === 'Premium' ? '#D6B676' : '#F6E27F'
+    ctx.fillStyle = vibe === 'Premium' ? '#D8BA7C' : '#F2D98D'
     ctx.beginPath()
     ctx.ellipse(cols[1], rows[1], ow * 0.5, oh * 0.5, 0, 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = '#18181C'
-    ctx.font = `700 ${Math.round(W * 0.025)}px "JetBrains Mono", monospace`
+    ctx.fillStyle = '#1F1A17'
+    ctx.font = `600 ${Math.round(W * 0.023)}px "Inter", system-ui, sans-serif`
     ctx.fillText('100% PRODUK ASLI', cols[1], rows[1] - W * 0.012, ow * 0.8)
-    ctx.font = `700 ${Math.round(W * 0.032)}px "Space Grotesk", sans-serif`
+    ctx.font = `700 ${Math.round(W * 0.032)}px "Fraunces", Georgia, serif`
     ctx.fillText(shortBrand, cols[1], rows[1] + W * 0.032, ow * 0.8)
 
     // Sticker 5: Stamp Ticket
@@ -584,9 +582,9 @@ export async function drawLabel(
     drawRoundedRect(ctx, cols[0] - tw * 0.5, rows[2] - th * 0.5, tw, th, 12 * sizeScale)
     ctx.fill()
     ctx.fillStyle = onCol
-    ctx.font = `600 ${Math.round(W * 0.022)}px "JetBrains Mono", monospace`
+    ctx.font = `600 ${Math.round(W * 0.021)}px "Inter", system-ui, sans-serif`
     ctx.fillText('TERIMA KASIH DARI', cols[0], rows[2] - W * 0.016)
-    ctx.font = `700 ${Math.round(W * 0.034)}px "Space Grotesk", sans-serif`
+    ctx.font = `600 ${Math.round(W * 0.034)}px "Fraunces", Georgia, serif`
     ctx.fillText(shortBrand, cols[0], rows[2] + W * 0.028, tw * 0.84)
 
     // Sticker 6: Circle Arc Icon Seal
@@ -595,11 +593,11 @@ export async function drawLabel(
       ctx.beginPath()
       ctx.arc(cols[1], rows[2], r6 + 12 * sizeScale, 0, Math.PI * 2)
     }, '#FFFFFF')
-    ctx.fillStyle = '#FAF7F0'
+    ctx.fillStyle = '#FAF7F2'
     ctx.beginPath()
     ctx.arc(cols[1], rows[2], r6, 0, Math.PI * 2)
     ctx.fill()
-    drawArcBrandMark(ctx, cols[1], rows[2], r6 * 0.52, colorHex, '#18181C')
+    drawArcBrandMark(ctx, cols[1], rows[2], r6 * 0.52, colorHex, '#1F1A17')
 
     applyPaperGrain(ctx, W, H, 0.03)
     return canvas

@@ -56,8 +56,8 @@ onMounted(() => {
   }
 
   const tick = () => {
-    currentX += (targetX - currentX) * 0.28
-    currentY += (targetY - currentY) * 0.28
+    currentX += (targetX - currentX) * 0.2
+    currentY += (targetY - currentY) * 0.2
     if (ringEl.value) {
       ringEl.value.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`
     }
@@ -87,21 +87,21 @@ onMounted(() => {
     v-if="enabled"
     ref="ringEl"
     aria-hidden="true"
-    class="fixed top-0 left-0 z-[9999] pointer-events-none transition-opacity duration-150"
+    class="fixed top-0 left-0 z-[9999] pointer-events-none mix-blend-multiply transition-opacity duration-300 ease-editorial"
     :class="visible ? 'opacity-100' : 'opacity-0'"
   >
     <div
-      class="-translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink flex items-center justify-center transition-all duration-150 ease-out"
+      class="-translate-x-1/2 -translate-y-1/2 rounded-full border border-terracotta/75 flex items-center justify-center transition-all duration-500 ease-editorial"
       :class="[
         hoveredInteractive
-          ? 'w-14 h-14 bg-yellow/35 border-indigo scale-105'
-          : 'w-8 h-8 bg-transparent',
-        pressed ? 'scale-90 bg-coral/35' : ''
+          ? 'w-14 h-14 bg-terracotta/20 border-terracotta scale-105'
+          : 'w-8 h-8 bg-terracotta/5',
+        pressed ? 'scale-90 bg-terracotta/30' : ''
       ]"
     >
       <span
-        class="rounded-full transition-all duration-150"
-        :class="hoveredInteractive ? 'w-2 h-2 bg-indigo' : 'w-1.5 h-1.5 bg-coral'"
+        class="rounded-full bg-terracotta transition-all duration-300 ease-editorial"
+        :class="hoveredInteractive ? 'w-1.5 h-1.5 opacity-90' : 'w-1 h-1 opacity-75'"
       ></span>
     </div>
   </div>

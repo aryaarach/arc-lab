@@ -1,13 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <rect width="1200" height="630" fill="#F4F1EA"/>
-  <rect x="46" y="46" width="1116" height="546" fill="#0B0B0F"/>
-  <rect x="36" y="36" width="1116" height="546" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="4"/>
-  <rect x="84" y="84" width="280" height="46" fill="#FFD84D" stroke="#0B0B0F" stroke-width="3"/>
-  <text x="104" y="114" font-family="monospace" font-size="20" font-weight="700" fill="#0B0B0F">STUDIO DESAIN UMKM</text>
-  <text x="84" y="245" font-family="sans-serif" font-size="78" font-weight="800" fill="#0B0B0F">ARC LAB STUDIO</text>
-  <text x="84" y="330" font-family="sans-serif" font-size="38" font-weight="600" fill="#5B5BFF">Logo · Kemasan 3D · Banner · Feed IG</text>
-  <rect x="84" y="400" width="440" height="76" fill="#22E6D0" stroke="#0B0B0F" stroke-width="3"/>
-  <text x="112" y="448" font-family="monospace" font-size="28" font-weight="700" fill="#0B0B0F">MULAI RP99.000 · 2-4 HARI</text>
-  <path d="M880 420 A130 130 0 1 1 1060 420" fill="none" stroke="#5B5BFF" stroke-width="28" stroke-linecap="round"/>
-  <circle cx="970" cy="330" r="24" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Arc Lab — Studio Desain Editorial Hangat untuk UMKM">
+  <defs>
+    <linearGradient id="ogWarm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FAF7F2"/>
+      <stop offset="65%" stop-color="#EFE8DC"/>
+      <stop offset="100%" stop-color="#E7DDD0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#ogWarm)"/>
+  <rect x="44" y="44" width="1112" height="542" rx="32" fill="#FAF7F2" stroke="#1F1A17" stroke-opacity="0.1" stroke-width="1.5"/>
+  <text x="96" y="128" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" letter-spacing="3.5" fill="#C8553D">STUDIO DESAIN UNTUK UMKM INDONESIA</text>
+  <text x="96" y="256" font-family="Fraunces, Georgia, serif" font-size="84" font-weight="600" letter-spacing="-2" fill="#1F1A17">Arc <tspan font-style="italic" font-weight="400">Lab</tspan><tspan fill="#C8553D">.</tspan></text>
+  <text x="96" y="336" font-family="Fraunces, Georgia, serif" font-size="38" font-style="italic" fill="#1F1A17" fill-opacity="0.78">Logo, Kemasan 3D Siap Cetak &amp; Konten Sosmed Rapi</text>
+  <rect x="96" y="410" width="410" height="64" rx="32" fill="#C8553D"/>
+  <text x="301" y="450" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#FAF7F2">Mulai Rp99.000 · Selesai 2–4 Hari</text>
+  <circle cx="950" cy="315" r="158" fill="#EFE8DC"/>
+  <path d="M862 405 A124 124 0 1 1 1038 405" fill="none" stroke="#C8553D" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="950" cy="322" r="24" fill="#C8553D"/>
 </svg>

@@ -1,87 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" width="760" height="540" role="img" aria-label="Foto studio kemasan produk UMKM di atas latar siklorama">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" width="760" height="540" role="img" aria-label="Foto studio kemasan produk UMKM di atas latar siklorama hangat">
   <defs>
-    <!-- Studio Cyclorama Sweep Gradient -->
     <linearGradient id="cycBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#EAE5DC"/>
-      <stop offset="58%" stop-color="#F4F1EA"/>
-      <stop offset="72%" stop-color="#E4DFD5"/>
-      <stop offset="100%" stop-color="#EFECE4"/>
+      <stop offset="0%" stop-color="#EFE8DC"/>
+      <stop offset="60%" stop-color="#FAF7F2"/>
+      <stop offset="75%" stop-color="#E7DFD1"/>
+      <stop offset="100%" stop-color="#F2ECE1"/>
     </linearGradient>
-    <!-- Soft Contact Shadow -->
     <radialGradient id="softShadow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#0B0B0F" stop-opacity="0.34"/>
-      <stop offset="55%" stop-color="#0B0B0F" stop-opacity="0.14"/>
-      <stop offset="100%" stop-color="#0B0B0F" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#1F1A17" stop-opacity="0.28"/>
+      <stop offset="55%" stop-color="#1F1A17" stop-opacity="0.11"/>
+      <stop offset="100%" stop-color="#1F1A17" stop-opacity="0"/>
     </radialGradient>
-    <!-- Pouch Highlight Gradient -->
     <linearGradient id="pouchBody" x1="0" y1="0" x2="1" y2="0.2">
-      <stop offset="0%" stop-color="#FAF7F1"/>
-      <stop offset="45%" stop-color="#F2ECE1"/>
-      <stop offset="100%" stop-color="#DDD5C7"/>
+      <stop offset="0%" stop-color="#FAF7F2"/>
+      <stop offset="48%" stop-color="#F2EBE0"/>
+      <stop offset="100%" stop-color="#DDD4C5"/>
     </linearGradient>
-    <!-- Cup Shading -->
     <linearGradient id="cupBody" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="55%" stop-color="#F3EFE7"/>
-      <stop offset="100%" stop-color="#D9D3C7"/>
+      <stop offset="55%" stop-color="#F5F0E7"/>
+      <stop offset="100%" stop-color="#DDD5C8"/>
     </linearGradient>
-    <!-- Glass Bottle Shading -->
     <linearGradient id="bottleGlass" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#4A2718"/>
-      <stop offset="28%" stop-color="#6B3B25"/>
-      <stop offset="75%" stop-color="#2E160D"/>
-      <stop offset="100%" stop-color="#4A2718"/>
+      <stop offset="0%" stop-color="#47271A"/>
+      <stop offset="28%" stop-color="#693B27"/>
+      <stop offset="75%" stop-color="#2B160E"/>
+      <stop offset="100%" stop-color="#47271A"/>
     </linearGradient>
   </defs>
 
-  <!-- Cyclorama Backdrop -->
   <rect width="760" height="540" fill="url(#cycBg)"/>
-
-  <!-- Soft Studio Contact Shadows -->
   <ellipse cx="195" cy="436" rx="92" ry="22" fill="url(#softShadow)"/>
   <ellipse cx="380" cy="448" rx="126" ry="28" fill="url(#softShadow)"/>
   <ellipse cx="566" cy="436" rx="84" ry="20" fill="url(#softShadow)"/>
 
-  <!-- LEFT: Tapered Beverage Cup with Domed Lid & Straw -->
+  <!-- LEFT: Beverage Cup -->
   <g transform="translate(132, 182)">
-    <!-- Straw -->
-    <line x1="68" y1="-34" x2="58" y2="42" stroke="#FF6B4A" stroke-width="10" stroke-linecap="round"/>
-    <!-- Cup Tapered Body -->
+    <line x1="68" y1="-34" x2="58" y2="42" stroke="#C8553D" stroke-width="10" stroke-linecap="round"/>
     <polygon points="14,54 114,54 98,248 30,248" fill="url(#cupBody)"/>
-    <!-- Printed Cup Band -->
-    <polygon points="18,98 110,98 103,196 25,196" fill="#FF6B4A"/>
-    <text x="64" y="150" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#FAF7F0">KOPI SENJA</text>
-    <!-- Domed Lid -->
-    <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.82"/>
-    <rect x="6" y="48" width="116" height="10" rx="5" fill="#EAE6DF"/>
+    <polygon points="18,98 110,98 103,196 25,196" fill="#C8553D"/>
+    <text x="64" y="152" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-weight="700" fill="#FAF7F2">KOPI SENJA</text>
+    <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.84"/>
+    <rect x="6" y="48" width="116" height="10" rx="5" fill="#EBE5DC"/>
   </g>
 
   <!-- RIGHT: Cold Brew Glass Bottle -->
   <g transform="translate(514, 132)">
-    <!-- Screw Cap -->
-    <rect x="36" y="0" width="36" height="32" rx="4" fill="#FF6B4A"/>
-    <!-- Neck & Glass Body -->
+    <rect x="36" y="0" width="36" height="32" rx="4" fill="#1F1A17"/>
     <path d="M40,32 L40,78 C40,104 12,118 12,150 L12,292 C12,300 20,304 54,304 C88,304 96,300 96,292 L96,150 C96,118 68,104 68,78 L68,32 Z" fill="url(#bottleGlass)"/>
-    <!-- Specular Glass Highlight -->
     <rect x="22" y="146" width="8" height="142" rx="4" fill="#FFFFFF" fill-opacity="0.32"/>
-    <!-- Bottle Wrap Label -->
-    <rect x="12" y="168" width="84" height="102" fill="#FAF7F0"/>
-    <rect x="18" y="176" width="72" height="6" fill="#FF6B4A"/>
-    <text x="54" y="224" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#181715">KOPI SENJA</text>
-    <text x="54" y="244" text-anchor="middle" font-family="monospace" font-size="8" fill="#6E6A63">250ML COLD BREW</text>
+    <rect x="12" y="168" width="84" height="102" rx="3" fill="#FAF7F2"/>
+    <rect x="18" y="176" width="72" height="5" fill="#C8553D"/>
+    <text x="54" y="224" text-anchor="middle" font-family="Georgia, serif" font-size="12" font-weight="700" fill="#1F1A17">KOPI SENJA</text>
+    <text x="54" y="244" text-anchor="middle" font-family="sans-serif" font-size="7.5" letter-spacing="1" fill="#6E655E">250ML COLD BREW</text>
   </g>
 
   <!-- CENTER: Standing Pouch Mockup -->
   <g transform="translate(274, 108)">
     <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#pouchBody)"/>
-    <!-- Zip Strip -->
-    <line x1="18" y1="38" x2="194" y2="38" stroke="#D2C9BA" stroke-width="4"/>
-    <!-- Front Label Print -->
-    <rect x="28" y="64" width="156" height="224" rx="4" fill="#FAF8F3"/>
-    <rect x="42" y="80" width="128" height="8" fill="#FF6B4A"/>
-    <circle cx="106" cy="142" r="20" fill="none" stroke="#181715" stroke-width="4" stroke-dasharray="95 35"/>
-    <circle cx="106" cy="142" r="6" fill="#FF6B4A"/>
-    <text x="106" y="204" text-anchor="middle" font-family="sans-serif" font-size="21" font-weight="700" fill="#181715">KOPI SENJA</text>
-    <text x="106" y="228" text-anchor="middle" font-family="monospace" font-size="10" fill="#57534E">PRODUK PILIHAN · 250G</text>
+    <line x1="18" y1="38" x2="194" y2="38" stroke="#D7CEC0" stroke-width="3.5"/>
+    <rect x="28" y="64" width="156" height="224" rx="8" fill="#FAF7F2"/>
+    <rect x="42" y="80" width="128" height="6" fill="#C8553D"/>
+    <path d="M92 153 A18 18 0 1 1 120 153" fill="none" stroke="#C8553D" stroke-width="3.8" stroke-linecap="round"/>
+    <circle cx="106" cy="142" r="4.5" fill="#C8553D"/>
+    <text x="106" y="204" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#1F1A17">KOPI SENJA</text>
+    <text x="106" y="228" text-anchor="middle" font-family="sans-serif" font-size="9" letter-spacing="1.4" fill="#6B625B">PRODUK PILIHAN · 250G</text>
   </g>
 </svg>

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 const siteTitle = 'Arc Lab — Studio Desain Logo, Kemasan & Konten Sosmed untuk UMKM'
 const siteDesc =
-  'Studio desain grafis untuk UMKM Indonesia: logo, kemasan produk siap cetak + pratinjau 3D, banner, dan konten sosmed rapi dengan harga UMKM.'
+  'Studio desain grafis bergaya editorial hangat untuk UMKM Indonesia: logo, kemasan produk siap cetak + pratinjau 3D, banner, dan konten sosmed rapi.'
 
 useHead({
   title: siteTitle,
   meta: [
     { name: 'description', content: siteDesc },
-    { name: 'theme-color', content: '#F4F1EA' },
+    { name: 'theme-color', content: '#FAF7F2' },
     // Open Graph
     { property: 'og:type', content: 'website' },
     { property: 'og:locale', content: 'id_ID' },
@@ -25,31 +25,31 @@ useHead({
 </script>
 
 <template>
-  <div class="min-h-screen bg-paper text-ink selection:bg-yellow selection:text-ink">
+  <div class="min-h-screen bg-cream text-espresso selection:bg-butter selection:text-espresso">
     <!-- Accessible Skip Link -->
     <a
       href="#konten-utama"
-      class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-yellow focus:border-2 focus:border-ink focus:font-mono focus:text-xs focus:font-bold"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-5 focus:py-2.5 focus:rounded-full focus:bg-espresso focus:text-cream focus:text-xs focus:font-medium focus:shadow-editorial"
     >
       Lewati ke konten utama
     </a>
 
-    <!-- Custom Desktop Ring Cursor (Hidden on touch devices) -->
+    <!-- Custom Desktop Terracotta Ring Cursor (Hidden on touch devices) -->
     <ClientOnly>
       <ArcCursor />
     </ClientOnly>
 
-    <!-- Sticky Neo-Brutalist Navigation -->
+    <!-- Floating Pill Navigation -->
     <NavBar />
 
     <main id="konten-utama">
-      <!-- Redesigned "Meja Kerja Lab" Hero (SSR copy + fallback SVG, <ClientOnly> Three.js desk scene) -->
+      <!-- Editorial Hero Stage + 3D Product Showcase -->
       <HeroScene />
 
-      <!-- Infinite Ticker Strip -->
+      <!-- Serif Italic Marquee Strip -->
       <MarqueeStrip />
 
-      <!-- Services Bento Grid -->
+      <!-- Asymmetric Services Bento Grid -->
       <ServiceBento />
 
       <!-- Interactive 3D Packaging Brand Mixer -->
@@ -58,20 +58,20 @@ useHead({
       <!-- Draggable Before / After Packaging Comparison -->
       <BeforeAfter />
 
-      <!-- Scroll-Following Process Timeline -->
+      <!-- Editorial Process Timeline -->
       <ProcessTimeline />
 
-      <!-- Interactive Price Calculator (#harga) with Eased Tween & Bundle Stamp -->
+      <!-- Interactive Price Calculator (#harga) with Eased Tween & Bundle Ribbon -->
       <PriceCalc />
 
-      <!-- UMKM Client Testimonials -->
+      <!-- Featured Serif Quote Carousel -->
       <Testimonials />
 
-      <!-- Accessible FAQ Accordion -->
+      <!-- Hairline FAQ Accordion -->
       <FaqAccordion />
     </main>
 
-    <!-- Final CTA + Studio Footer -->
+    <!-- Dark Espresso CTA + Studio Footer -->
     <CtaFooter />
   </div>
 </template>

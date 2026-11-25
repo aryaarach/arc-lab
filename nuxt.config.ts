@@ -1,10 +1,32 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss', '@nuxt/fonts'],
   css: ['~/assets/css/tailwind.css'],
   tailwindcss: {
     cssPath: '~/assets/css/tailwind.css',
     configPath: 'tailwind.config.ts'
+  },
+  fonts: {
+    defaults: {
+      weights: ['400 700'],
+      styles: ['normal', 'italic']
+    },
+    families: [
+      {
+        name: 'Fraunces',
+        provider: 'google',
+        weights: ['300 700'],
+        styles: ['normal', 'italic'],
+        display: 'swap'
+      },
+      {
+        name: 'Inter',
+        provider: 'google',
+        weights: ['400 700'],
+        styles: ['normal'],
+        display: 'swap'
+      }
+    ]
   },
   app: {
     head: {
@@ -14,13 +36,7 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' },
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap'
-        }
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
       ]
     }
   }
