@@ -4,11 +4,25 @@
 
 @layer base {
   html {
-    background-color: #F4F1EA;
-    color: #0B0B0F;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #FFFFFF;
+    color: #0A0A0A;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
     scroll-behavior: smooth;
-    scroll-padding-top: 5.5rem;
+    scroll-padding-top: 5rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: #0A0A0A;
+    overflow-x: hidden;
+  }
+
+  /* Accessible visible focus rings: 2px signal red, offset 2px */
+  :focus-visible {
+    outline: 2px solid #E63312;
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -21,137 +35,98 @@
       transition-duration: 0.01ms !important;
     }
   }
-
-  body {
-    background-color: #F4F1EA;
-    color: #0B0B0F;
-    overflow-x: hidden;
-  }
-
-  /* Subtle Neo-Brutalist Lab Grid Background */
-  .bg-lab-grid {
-    background-image:
-      linear-gradient(to right, rgba(11, 11, 15, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(11, 11, 15, 0.06) 1px, transparent 1px);
-    background-size: 36px 36px;
-  }
-
-  .bg-lab-dots {
-    background-image: radial-gradient(rgba(11, 11, 15, 0.14) 1.25px, transparent 1.25px);
-    background-size: 20px 20px;
-  }
-
-  /* Accessible visible focus rings */
-  :focus-visible {
-    outline: 3px solid #5B5BFF;
-    outline-offset: 2px;
-  }
 }
 
 @layer components {
-  .brutal-card {
-    @apply bg-paper border-2 border-ink shadow-brutal;
+  /* Strict Swiss 12-column container & grid (collapses to 4 columns on mobile) */
+  .swiss-container {
+    @apply max-w-swiss mx-auto px-6 md:px-12;
   }
 
-  /* Press-down Neo-brutalist button effect */
-  .brutal-btn {
-    @apply inline-flex items-center justify-center gap-2 border-2 border-ink font-display font-bold shadow-brutal transition-all duration-150 hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-brutal-sm active:translate-x-[6px] active:translate-y-[6px] active:shadow-none;
+  .swiss-grid {
+    @apply grid grid-cols-4 lg:grid-cols-12 gap-x-6;
   }
 
-  .brutal-tag {
-    @apply inline-flex items-center gap-1.5 border-2 border-ink px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider shadow-brutal-sm;
+  /* Tiny JetBrains Mono uppercase caption / index label (11-12px) */
+  .swiss-mono {
+    @apply font-mono text-[11px] sm:text-xs uppercase tracking-[0.08em] leading-none;
   }
-}
 
-/* Pure-CSS H1 Rotating Highlight Word (2.2s per word * 3 = 6.6s cycle) */
-@keyframes heroWordCycle {
-  0%, 27.5% {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+  /* Rectangular Swiss buttons: 1px black border, radius 0, no shadows, 4px arrow shift */
+  .swiss-btn-primary {
+    @apply inline-flex items-center justify-center gap-2.5 rounded-none border border-black bg-black text-white font-sans font-medium tracking-[-0.02em] transition-colors duration-300 ease-out hover:bg-signal hover:border-signal;
   }
-  33.33% {
-    opacity: 0;
-    transform: translateY(-42%);
-    pointer-events: none;
+
+  .swiss-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2.5 rounded-none border border-black bg-transparent text-black font-sans font-medium tracking-[-0.02em] transition-colors duration-300 ease-out hover:bg-black hover:text-white;
   }
-  33.34%, 94% {
-    opacity: 0;
-    transform: translateY(42%);
-    pointer-events: none;
+
+  .swiss-arrow {
+    @apply inline-block transition-transform duration-300 ease-out;
   }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+
+  .group:hover .swiss-arrow,
+  .swiss-btn-primary:hover .swiss-arrow,
+  .swiss-btn-secondary:hover .swiss-arrow {
+    transform: translateX(4px);
   }
 }
 
-.hero-word-rotator {
-  display: inline-grid;
-  vertical-align: bottom;
-}
-
-.hero-word-item {
-  grid-area: 1 / 1;
-  justify-self: start;
-  will-change: transform, opacity;
-  animation: heroWordCycle 6.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-.hero-word-item-0 {
-  animation-delay: 0s;
-}
-
-.hero-word-item-1 {
-  opacity: 0;
-  animation-delay: -4.4s;
-}
-
-.hero-word-item-2 {
-  opacity: 0;
-  animation-delay: -2.2s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-word-item {
-    animation: none !important;
-  }
-  .hero-word-item-0 {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .hero-word-item-1,
-  .hero-word-item-2 {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-}
-
-.hero-words-static .hero-word-item {
-  animation: none !important;
-}
-.hero-words-static .hero-word-item-0 {
-  opacity: 1 !important;
-  transform: none !important;
-}
-.hero-words-static .hero-word-item-1,
-.hero-words-static .hero-word-item-2 {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Scroll reveal directive states */
+/* Scroll reveal directive: 360ms ease-out opacity + 12px translate */
 .reveal-init {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(12px);
+  transition:
+    opacity 0.36s ease-out,
+    transform 0.36s ease-out;
   will-change: opacity, transform;
 }
 
 .reveal-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* 1px horizontal section rule draw-in animation */
+.swiss-section-rule {
+  position: relative;
+  height: 1px;
+  width: 100%;
+  background-color: #D9D9D5;
+  overflow: hidden;
+}
+
+.swiss-section-rule::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #0A0A0A;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.4s ease-out;
+}
+
+.reveal-visible .swiss-section-rule::after,
+.swiss-section-rule.reveal-visible::after {
+  transform: scaleX(1);
+}
+
+/* Quote transition: 320ms ease-out, 12px vertical shift */
+.quote-swiss-enter-active,
+.quote-swiss-leave-active {
+  transition:
+    opacity 0.32s ease-out,
+    transform 0.32s ease-out;
+}
+
+.quote-swiss-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.quote-swiss-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* Hide scrollbar utility for horizontal timeline snap */

@@ -45,19 +45,37 @@ const hoveredCaption = reactive({
   y: 0
 })
 
-// Quick keyboard-accessible product tabs shown along bottom studio bar
-const heroTabProducts = PRODUCT_CATALOG.slice(0, 6)
+// Keyboard-accessible product tabs along bottom studio bar
+const heroTabProducts = PRODUCT_CATALOG
 
 const displayBrand = computed(() => (brandName.value.trim() || 'KOPI SENJA').slice(0, 18).toUpperCase())
+
+const currentProductIndex = computed(() => {
+  const idx = PRODUCT_CATALOG.findIndex((p) => p.id === productId.value)
+  return idx >= 0 ? idx : 0
+})
+
+const currentProductIndexLabel = computed(() =>
+  `${String(currentProductIndex.value + 1).padStart(2, '0')}/${String(PRODUCT_CATALOG.length).padStart(2, '0')}`
+)
+
+const currentCenterProductMeta = computed(
+  () => PRODUCT_CATALOG[currentProductIndex.value] || PRODUCT_CATALOG[0]
+)
 
 const currentBackdropMeta = computed(
   () => BACKDROP_PRESETS.find((b) => b.id === backdropId.value) || BACKDROP_PRESETS[0]
 )
 
 const dynamicAriaLabel = computed(() => {
-  const centerMeta = PRODUCT_CATALOG.find((p) => p.id === productId.value) || PRODUCT_CATALOG[0]
-  return `Studio foto 3D menampilkan ${centerMeta.name}, Cup Minuman, Botol Kaca, Kartu Nama, dan Sticker Sheet dengan merek ${displayBrand.value}`
+  return `Studio foto 3D menampilkan ${currentCenterProductMeta.value.name}, Cup Minuman, Botol Kaca, Kartu Nama, dan Sticker Sheet dengan merek ${displayBrand.value}`
 })
+
+const trustStats = [
+  { num: '120+', label: 'UMKM TERLAYANI' },
+  { num: '7', label: 'HARI MAKSIMAL' },
+  { num: '3x', label: 'REVISI TERARAH' }
+]
 
 let cleanupFn: (() => void) | null = null
 let triggerPhotoFn: (() => Promise<void>) | null = null
@@ -73,7 +91,7 @@ function onBrandInput(e: Event) {
 function handleLihat3D() {
   pauseShowreelFn?.()
   focus3DStageFn?.()
-  if (typeof window !== 'undefined' && window.innerWidth < 1024 && stageWrapRef.value) {
+  if (typeof window !== 'undefined' && stageWrapRef.value) {
     stageWrapRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
@@ -153,18 +171,19 @@ onMounted(async () => {
   canvas.setAttribute('aria-label', dynamicAriaLabel.value)
   canvas.style.touchAction = 'pan-y'
 
-  // Slight low-angle longer-lens studio hero framing
   const lookTarget = new THREE.Vector3(0, 0.72, 0.15)
   const baseCamDist = 6.15
-  const baseCamElev = 0.21 // radians (~12 deg)
-  camera.position.set(0, lookTarget.y + Math.sin(baseCamElev) * baseCamDist, lookTarget.z + Math.cos(baseCamElev) * baseCamDist)
+  const baseCamElev = 0.21
+  camera.position.set(
+    0,
+    lookTarget.y + Math.sin(baseCamElev) * baseCamDist,
+    lookTarget.z + Math.cos(baseCamElev) * baseCamDist
+  )
   camera.lookAt(lookTarget)
 
-  // Studio turntable holding the 5 hero products
   const turntable = new THREE.Group()
   scene.add(turntable)
 
-  // Shared per-layout CanvasTextures so typing ONLY redraws 2D canvases (never rebuilds geometry!)
   const sharedTextures = {} as Record<LabelLayout, import('three').CanvasTexture>
   const layouts: LabelLayout[] = ['front', 'wrap', 'card', 'sticker']
 
@@ -292,7 +311,6 @@ onMounted(async () => {
 
   rebuildAllSlots(false)
 
-  // Watchers: debounce brandName 150ms (rebuild ONLY label textures, NEVER geometry per keystroke!)
   let brandDebounceTimer: ReturnType<typeof setTimeout> | null = null
   const stopWatchBrand = watch(brandName, () => {
     canvas.setAttribute('aria-label', dynamicAriaLabel.value)
@@ -325,7 +343,6 @@ onMounted(async () => {
     stage.setBackdropColor(currentBackdropMeta.value.hex)
   })
 
-  // Showreel timer (swaps center product every 4s, pauses 10s on any user interaction)
   let pauseShowreelUntil = 0
   let lastShowreelSwap = performance.now()
 
@@ -345,7 +362,6 @@ onMounted(async () => {
     await captureStagePng(renderer, scene, camera, `arc-lab-${slug}-hero.png`)
   }
 
-  // Pointer parallax (camera max 6 deg orbit), hover raycast, click bounce/promote, turntable drag
   const raycaster = new THREE.Raycaster()
   const pointerNDC = new THREE.Vector2(99, 99)
   const projVec = new THREE.Vector3()
@@ -384,14 +400,16 @@ onMounted(async () => {
     }
     hoveredSlot = slot
     isHoveringProduct.value = true
-    const meta = PRODUCT_CATALOG.find((p) => p.id === slot.productId)
+    const idx = PRODUCT_CATALOG.findIndex((p) => p.id === slot.productId)
+    const meta = PRODUCT_CATALOG[idx >= 0 ? idx : 0]
+    const numStr = String((idx >= 0 ? idx : 0) + 1).padStart(2, '0')
     slot.anchor.getWorldPosition(projVec)
     projVec.y += slot.built.bounds.height * slot.baseScale + 0.18
     projVec.project(camera)
     const w = stageEl.clientWidth
     const h = stageEl.clientHeight
-    hoveredCaption.text = meta ? meta.name.toUpperCase() : slot.productId.toUpperCase()
-    hoveredCaption.x = Math.min(w - 76, Math.max(76, (projVec.x * 0.5 + 0.5) * w))
+    hoveredCaption.text = `${numStr} / ${meta ? meta.name.toUpperCase() : slot.productId.toUpperCase()}`
+    hoveredCaption.x = Math.min(w - 86, Math.max(86, (projVec.x * 0.5 + 0.5) * w))
     hoveredCaption.y = Math.min(h - 44, Math.max(28, (-projVec.y * 0.5 + 0.5) * h))
     hoveredCaption.visible = true
   }
@@ -425,7 +443,6 @@ onMounted(async () => {
       const dx = e.clientX - downX
       const dy = e.clientY - downY
       if (!dragStarted && Math.hypot(dx, dy) > 6) {
-        // Respect vertical page scroll on touch
         if (e.pointerType === 'touch' && Math.abs(dy) > Math.abs(dx)) {
           pointerDown = false
           return
@@ -482,7 +499,6 @@ onMounted(async () => {
   window.addEventListener('pointerup', onPointerUp, { passive: true })
   canvas.addEventListener('pointerleave', onPointerLeave, { passive: true })
 
-  // Render loop + IntersectionObserver + ResizeObserver + document.hidden
   let rafId = 0
   let running = false
   let inView = true
@@ -493,7 +509,6 @@ onMounted(async () => {
     const dt = Math.min((now - prevTime) / 1000, 0.05)
     prevTime = now
 
-    // Automatic 4s center showreel when idle
     if (now > pauseShowreelUntil && now - lastShowreelSwap >= 4000) {
       lastShowreelSwap = now
       const idx = PRODUCT_CATALOG.findIndex((p) => p.id === productId.value)
@@ -501,7 +516,6 @@ onMounted(async () => {
       productId.value = next.id
     }
 
-    // Smooth damped camera parallax orbit (max 6 degrees)
     currentCamAzimuth += (targetCamAzimuth - currentCamAzimuth) * 0.065
     currentCamElevOffset += (targetCamElevOffset - currentCamElevOffset) * 0.065
     const elev = baseCamElev + currentCamElevOffset
@@ -513,7 +527,6 @@ onMounted(async () => {
     )
     camera.lookAt(lookTarget)
 
-    // Turntable drag inertia
     if (!isDraggingTurntable.value) {
       turntableYaw += turntableVel
       turntableVel *= 0.92
@@ -521,7 +534,6 @@ onMounted(async () => {
     }
     turntable.rotation.y = turntableYaw
 
-    // Per-slot hover lift (0.05) & scale (1.04), click bounce, and showreel swap pop+spin
     for (const s of slots) {
       const targetLift = hoveredSlot === s ? 0.05 : 0
       const targetHoverSc = hoveredSlot === s ? 1.04 : 1.0
@@ -532,13 +544,13 @@ onMounted(async () => {
       let extraSpin = 0
       if (s.swapAnimTime >= 0) {
         s.swapAnimTime += dt
-        const dur = 0.45
+        const dur = 0.4
         if (s.swapAnimTime >= dur) {
           s.swapAnimTime = -1
         } else {
           const p = s.swapAnimTime / dur
           popScale = Math.max(0.05, easeOutBack(p))
-          extraSpin = (1 - Math.pow(p, 0.65)) * Math.PI * 1.15
+          extraSpin = (1 - Math.pow(p, 0.65)) * Math.PI * 1.1
         }
       }
 
@@ -549,17 +561,17 @@ onMounted(async () => {
 
       if (s.bounceTime >= 0) {
         s.bounceTime += dt
-        const bDur = 0.46
+        const bDur = 0.42
         if (s.bounceTime >= bDur) {
           s.bounceTime = -1
         } else {
           const p = s.bounceTime / bDur
           const decay = Math.exp(-4.5 * p)
           const wave = Math.sin(p * Math.PI * 3.0)
-          sy *= 1 + wave * decay * 0.11
-          sx *= 1 - wave * decay * 0.06
-          sz *= 1 - wave * decay * 0.06
-          bounceY = Math.abs(wave) * decay * 0.09
+          sy *= 1 + wave * decay * 0.1
+          sx *= 1 - wave * decay * 0.055
+          sz *= 1 - wave * decay * 0.055
+          bounceY = Math.abs(wave) * decay * 0.08
         }
       }
 
@@ -665,163 +677,167 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section id="beranda" class="relative py-8 sm:py-12 lg:py-14 px-4 sm:px-6 lg:px-8 overflow-x-clip">
-    <div class="max-w-7xl mx-auto relative">
-      <!-- Floating Neo-Brutalist Stickers Over Frame Edges (CSS Only) -->
-      <div
-        aria-hidden="true"
-        class="hidden sm:inline-flex items-center gap-1.5 absolute -top-4 left-6 z-20 px-3 py-1 bg-cyan border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase -rotate-3 select-none pointer-events-none"
-      >
-        <span>✦ Gratis konsultasi</span>
-      </div>
-      <div
-        aria-hidden="true"
-        class="inline-flex items-center gap-1.5 absolute -top-4 right-4 sm:right-10 z-20 px-3.5 py-1 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-3 select-none pointer-events-none"
-      >
-        <span>Mulai Rp99rb</span>
-      </div>
-      <div
-        aria-hidden="true"
-        class="hidden md:inline-flex items-center gap-1.5 absolute -bottom-4 left-[36%] z-20 px-3.5 py-1 bg-coral text-ink border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase rotate-2 select-none pointer-events-none"
-      >
-        <span>File master lengkap</span>
+  <section id="beranda" class="pt-10 sm:pt-14 lg:pt-20 pb-16 sm:pb-24 bg-white">
+    <div class="swiss-container">
+      <!-- Top Mono Caption Row -->
+      <div class="flex flex-wrap items-center justify-between gap-4 pb-6 sm:pb-8">
+        <p class="swiss-mono text-black flex items-center gap-2.5">
+          <span class="inline-block w-2 h-2 rounded-full bg-signal" aria-hidden="true"></span>
+          <span>ARC LAB / STUDIO DESAIN UMKM / 2026</span>
+        </p>
+        <p class="hidden sm:block swiss-mono text-dark-gray">
+          INDONESIA · 100% ONLINE · FILE MASTER LENGKAP
+        </p>
       </div>
 
-      <!-- 2px Ink Frame: Left ~42% Copy, Right ~58% Photoreal Studio Stage -->
-      <div class="border-2 border-ink bg-paper shadow-brutal-lg grid grid-cols-1 lg:grid-cols-[42fr_58fr]">
-        <!-- LEFT COPY COLUMN (SSR LCP — renders immediately without waiting for three.js) -->
-        <div class="p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-b-2 lg:border-b-0 lg:border-r-2 border-ink bg-paper">
+      <!-- Enormous 9-Col Grotesk Headline + 3-Col Lead Copy -->
+      <div class="swiss-grid items-end gap-y-6">
+        <div class="col-span-4 lg:col-span-9">
+          <h1
+            class="font-display font-medium text-[56px] sm:text-[84px] lg:text-[112px] xl:text-[136px] 2xl:text-[152px] tracking-[-0.035em] leading-[0.93] text-black text-left"
+          >
+            Brand-mu,<br />
+            langsung jadi<br />
+            kemasan<span class="text-signal">.</span>
+          </h1>
+        </div>
+
+        <div class="col-span-4 lg:col-span-3 lg:pb-2">
+          <p class="text-base sm:text-lg text-dark-gray leading-relaxed text-left max-w-sm">
+            Sistem identitas, kemasan produk siap cetak, dan konten sosmed presisi untuk UMKM. Ketik merek usahamu untuk menguji pratinjau studio 3D secara langsung.
+          </p>
+        </div>
+      </div>
+
+      <!-- 12-Col Controls, Swatches, CTAs & Large Numeral Trust Stats Row -->
+      <div class="mt-10 sm:mt-14 pt-8 pb-10 border-t border-line swiss-grid gap-y-8 items-end">
+        <!-- Cols 1-5: Underlined Brand Input + 6 Plain Circle Swatches -->
+        <div class="col-span-4 lg:col-span-5 flex flex-col gap-5">
           <div>
-            <!-- Mono Label Chip -->
-            <div class="mt-2 sm:mt-0 inline-flex items-center gap-2 px-3 py-1 bg-yellow border-2 border-ink shadow-brutal-sm font-mono text-xs font-bold uppercase tracking-wider">
-              STUDIO DESAIN UNTUK UMKM
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="hero-brand-input" class="swiss-mono text-dark-gray">
+                01 / KETIK NAMA BRAND
+              </label>
+              <span class="swiss-mono text-dark-gray">{{ brandName.length }}/18</span>
             </div>
 
-            <!-- H1 with Rotating Highlight Block on Last Word -->
-            <h1
-              class="mt-4 font-display text-4xl sm:text-5xl xl:text-[3.25rem] font-bold tracking-tight leading-[1.08] text-ink"
-              :class="{ 'hero-words-static': staticFallback }"
-            >
-              <span class="sr-only">
-                Brand-mu, langsung jadi kemasan, identitas, dan produk nyata.
-              </span>
-              <span aria-hidden="true" aria-live="off">
-                Brand-mu, langsung jadi
-                <span class="hero-word-rotator mt-1">
-                  <span class="hero-word-item hero-word-item-0 px-2.5 py-0.5 bg-yellow border-2 border-ink shadow-brutal-sm">
-                    kemasan.
-                  </span>
-                  <span class="hero-word-item hero-word-item-1 px-2.5 py-0.5 bg-cyan border-2 border-ink shadow-brutal-sm">
-                    identitas.
-                  </span>
-                  <span class="hero-word-item hero-word-item-2 px-2.5 py-0.5 bg-coral border-2 border-ink shadow-brutal-sm">
-                    kebanggaan.
-                  </span>
-                </span>
-              </span>
-            </h1>
-
-            <!-- Short Subcopy -->
-            <p class="mt-4 text-sm sm:text-base text-ink/85 leading-relaxed">
-              Logo, kemasan siap cetak, dan konten sosmed rapi dengan harga UMKM. Coba ketik merek usahamu di bawah untuk melihat hasilnya langsung di studio 3D.
-            </p>
-
-            <!-- Live Brand Input + "Lihat di 3D" Button -->
-            <div class="mt-5 p-4 bg-paper-dark/70 border-2 border-ink shadow-brutal-sm">
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="hero-brand-input" class="font-mono text-xs font-bold uppercase tracking-wider">
-                  Ketik nama brand-mu
-                </label>
-                <span class="font-mono text-[11px] text-ink/70">{{ brandName.length }}/18</span>
-              </div>
-              <div class="flex flex-col sm:flex-row gap-2.5">
-                <input
-                  id="hero-brand-input"
-                  :value="brandName"
-                  type="text"
-                  maxlength="18"
-                  placeholder="KOPI SENJA"
-                  class="flex-1 min-w-0 px-3.5 py-2.5 bg-white border-2 border-ink font-display font-bold text-base focus:outline-none focus:ring-2 focus:ring-indigo"
-                  @input="onBrandInput"
-                />
-                <button
-                  type="button"
-                  class="px-4 py-2.5 bg-coral text-ink border-2 border-ink font-display font-bold text-sm shadow-brutal-sm hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none shrink-0"
-                  @click="handleLihat3D"
-                >
-                  Lihat di 3D
-                </button>
-              </div>
-
-              <!-- 6 Color Swatches -->
-              <div class="mt-3 flex flex-wrap items-center gap-2.5">
-                <span class="font-mono text-[11px] font-bold uppercase text-ink/75 mr-1">Warna:</span>
-                <button
-                  v-for="sw in BRAND_SWATCHES"
-                  :key="sw.hex"
-                  type="button"
-                  :aria-label="`Pilih warna ${sw.name}`"
-                  :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
-                  class="w-7 h-7 border-2 border-ink transition-transform flex items-center justify-center"
-                  :class="
-                    colorHex.toLowerCase() === sw.hex.toLowerCase()
-                      ? 'scale-110 ring-2 ring-indigo ring-offset-1 ring-offset-paper shadow-brutal-sm'
-                      : 'hover:scale-105'
-                  "
-                  :style="{ backgroundColor: sw.hex }"
-                  @click="
-                    colorHex = sw.hex;
-                    pauseShowreelFn?.();
-                  "
-                >
-                  <span
-                    v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
-                    class="text-[10px] font-mono font-bold"
-                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-ink' : 'text-paper'"
-                    aria-hidden="true"
-                  >✓</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Two CTAs -->
-            <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <a
-                href="#harga"
-                class="brutal-btn bg-indigo text-paper px-6 py-3.5 text-sm sm:text-base"
+            <div class="flex items-end gap-3">
+              <input
+                id="hero-brand-input"
+                :value="brandName"
+                type="text"
+                maxlength="18"
+                placeholder="KOPI SENJA"
+                class="flex-1 min-w-0 px-0 py-2 bg-transparent border-0 border-b border-black rounded-none font-display text-2xl sm:text-3xl font-medium tracking-[-0.03em] text-black placeholder:text-mid-gray focus:border-signal focus:outline-none transition-colors duration-300"
+                @input="onBrandInput"
+              />
+              <button
+                type="button"
+                class="group swiss-btn-secondary px-4 py-2.5 text-xs sm:text-sm shrink-0"
+                @click="handleLihat3D"
               >
-                <span>Mulai Proyek</span>
-                <span aria-hidden="true">→</span>
-              </a>
-              <a
-                href="#mixer"
-                class="brutal-btn bg-white text-ink px-6 py-3.5 text-sm sm:text-base"
-              >
-                Coba Brand Mixer
-              </a>
+                <span>Lihat di 3D</span>
+                <span class="swiss-arrow" aria-hidden="true">↗</span>
+              </button>
             </div>
           </div>
 
-          <!-- Trust Row -->
-          <div class="mt-7 pt-5 border-t-2 border-ink/15 flex flex-wrap items-center gap-2">
-            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
-              120+ UMKM
-            </span>
-            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
-              7 hari kerja
-            </span>
-            <span class="px-2.5 py-1 bg-paper-dark border-2 border-ink font-mono text-xs font-bold">
-              Revisi 3x
-            </span>
+          <!-- 6 Plain Circle Swatches -->
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="swiss-mono text-dark-gray mr-1">WARNA:</span>
+            <button
+              v-for="sw in BRAND_SWATCHES"
+              :key="sw.hex"
+              type="button"
+              :aria-label="`Pilih warna ${sw.name}`"
+              :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
+              class="w-6 h-6 rounded-full border border-black/15 transition-transform duration-300 ease-out"
+              :class="
+                colorHex.toLowerCase() === sw.hex.toLowerCase()
+                  ? 'ring-2 ring-signal ring-offset-2 ring-offset-white scale-110'
+                  : 'hover:scale-110'
+              "
+              :style="{ backgroundColor: sw.hex }"
+              @click="
+                colorHex = sw.hex;
+                pauseShowreelFn?.();
+              "
+            ></button>
           </div>
         </div>
 
-        <!-- RIGHT STAGE COLUMN (~58% Desktop, 380px Mobile reserved height for zero CLS) -->
+        <!-- Cols 6-9: Rectangular Primary & Outline CTAs -->
+        <div class="col-span-4 lg:col-span-4 flex flex-wrap items-center gap-3">
+          <a
+            href="#harga"
+            class="group swiss-btn-primary px-6 py-3.5 text-sm sm:text-base"
+          >
+            <span>Mulai Proyek</span>
+            <span class="swiss-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a
+            href="#mixer"
+            class="group swiss-btn-secondary px-6 py-3.5 text-sm sm:text-base"
+          >
+            <span>Coba Brand Mixer</span>
+            <span class="swiss-arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+
+        <!-- Cols 10-12: Trust Stats as Large Numerals with Small Captions -->
+        <div
+          class="col-span-4 lg:col-span-3 grid grid-cols-3 gap-4 border-t lg:border-t-0 lg:border-l border-line pt-6 lg:pt-0 lg:pl-6"
+        >
+          <div v-for="stat in trustStats" :key="stat.num" class="text-left">
+            <div class="font-display text-3xl xl:text-4xl font-semibold tracking-[-0.03em] leading-none text-black">
+              {{ stat.num }}
+            </div>
+            <div class="swiss-mono text-dark-gray mt-2">
+              {{ stat.label }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sharp-Cornered 1px Border Three.js Product Showcase Frame -->
+      <div class="border border-black bg-white rounded-none">
+        <!-- Top Mono Caption Bar (Product Name + Index 01/10 + Controls) -->
+        <div class="px-4 sm:px-5 py-3 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-white">
+          <div class="flex flex-wrap items-center gap-3 swiss-mono text-black">
+            <span class="text-signal font-semibold">{{ currentProductIndexLabel }}</span>
+            <span class="text-line" aria-hidden="true">/</span>
+            <span>{{ currentCenterProductMeta.name }}</span>
+            <span class="text-line" aria-hidden="true">/</span>
+            <span class="text-dark-gray">{{ displayBrand }}</span>
+          </div>
+
+          <div
+            v-if="sceneReady && !staticFallback"
+            class="flex items-center gap-2"
+          >
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-none border border-black bg-white text-black swiss-mono hover:bg-black hover:text-white transition-colors duration-300 ease-out"
+              @click="handleCycleColor"
+            >
+              Ganti warna
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-none border border-black bg-black text-white swiss-mono hover:bg-signal hover:border-signal transition-colors duration-300 ease-out"
+              @click="handleTakePhoto"
+            >
+              Foto!
+            </button>
+          </div>
+        </div>
+
+        <!-- Reserved-Height Neutral Studio Viewport (Zero CLS) -->
         <div
           ref="stageWrapRef"
-          class="relative h-[380px] sm:h-[450px] lg:h-auto lg:min-h-[600px] overflow-hidden select-none bg-[#EAE5DC]"
+          class="relative h-[380px] sm:h-[480px] lg:h-[580px] overflow-hidden select-none bg-off-white"
         >
-          <!-- Semi-Realistic Vector Fallback (SSR + Reduced Motion + No WebGL) with Live Reactive <text> -->
+          <!-- Neutral Studio Vector Fallback (SSR + Reduced Motion + No WebGL) -->
           <div
             v-if="!sceneReady || staticFallback"
             class="absolute inset-0 flex items-center justify-center"
@@ -833,77 +849,77 @@ onBeforeUnmount(() => {
               :aria-label="`Pratinjau kemasan studio untuk merek ${displayBrand}`"
             >
               <defs>
-                <linearGradient id="heroFallbackCyc" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" :stop-color="currentBackdropMeta.hex" />
-                  <stop offset="66%" :stop-color="currentBackdropMeta.hex" />
-                  <stop offset="78%" stop-color="#D9D3C7" />
-                  <stop offset="100%" :stop-color="currentBackdropMeta.hex" />
+                <linearGradient id="heroSwissCyc" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#E8E8E4" />
+                  <stop offset="64%" stop-color="#F2F2F0" />
+                  <stop offset="78%" stop-color="#E2E2DE" />
+                  <stop offset="100%" stop-color="#F2F2F0" />
                 </linearGradient>
-                <radialGradient id="heroFallbackShadow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#0B0B0F" stop-opacity="0.34" />
-                  <stop offset="55%" stop-color="#0B0B0F" stop-opacity="0.14" />
-                  <stop offset="100%" stop-color="#0B0B0F" stop-opacity="0" />
+                <radialGradient id="heroSwissShadow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#0A0A0A" stop-opacity="0.28" />
+                  <stop offset="55%" stop-color="#0A0A0A" stop-opacity="0.10" />
+                  <stop offset="100%" stop-color="#0A0A0A" stop-opacity="0" />
                 </radialGradient>
-                <linearGradient id="heroFallbackPouch" x1="0" y1="0" x2="1" y2="0.2">
-                  <stop offset="0%" stop-color="#FAF7F1" />
-                  <stop offset="48%" stop-color="#F1ECE1" />
-                  <stop offset="100%" stop-color="#DAD2C3" />
+                <linearGradient id="heroSwissPouch" x1="0" y1="0" x2="1" y2="0.2">
+                  <stop offset="0%" stop-color="#FFFFFF" />
+                  <stop offset="50%" stop-color="#F2F2F0" />
+                  <stop offset="100%" stop-color="#DADAD6" />
                 </linearGradient>
-                <linearGradient id="heroFallbackGlass" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stop-color="#4A2718" />
-                  <stop offset="30%" stop-color="#6B3B25" />
-                  <stop offset="78%" stop-color="#2E160D" />
-                  <stop offset="100%" stop-color="#4A2718" />
+                <linearGradient id="heroSwissGlass" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#262624" />
+                  <stop offset="30%" stop-color="#3E3E3A" />
+                  <stop offset="78%" stop-color="#141413" />
+                  <stop offset="100%" stop-color="#262624" />
                 </linearGradient>
               </defs>
 
-              <rect width="760" height="540" fill="url(#heroFallbackCyc)" />
-              <ellipse cx="195" cy="436" rx="92" ry="22" fill="url(#heroFallbackShadow)" />
-              <ellipse cx="380" cy="448" rx="126" ry="28" fill="url(#heroFallbackShadow)" />
-              <ellipse cx="566" cy="436" rx="84" ry="20" fill="url(#heroFallbackShadow)" />
+              <rect width="760" height="540" fill="url(#heroSwissCyc)" />
+              <ellipse cx="195" cy="436" rx="92" ry="20" fill="url(#heroSwissShadow)" />
+              <ellipse cx="380" cy="448" rx="126" ry="26" fill="url(#heroSwissShadow)" />
+              <ellipse cx="566" cy="436" rx="84" ry="18" fill="url(#heroSwissShadow)" />
 
               <!-- Cup -->
               <g transform="translate(132, 182)">
-                <line x1="68" y1="-34" x2="58" y2="42" :stroke="colorHex" stroke-width="10" stroke-linecap="round" />
-                <polygon points="14,54 114,54 98,248 30,248" fill="#F5F1E9" />
+                <line x1="68" y1="-34" x2="58" y2="42" :stroke="colorHex" stroke-width="9" stroke-linecap="butt" />
+                <polygon points="14,54 114,54 98,248 30,248" fill="#FFFFFF" />
                 <polygon points="18,98 110,98 103,196 25,196" :fill="colorHex" />
-                <text x="64" y="152" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#FAF7F0">
+                <text x="64" y="152" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF">
                   {{ displayBrand.slice(0, 12) }}
                 </text>
-                <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.84" />
-                <rect x="6" y="48" width="116" height="10" rx="5" fill="#E6E1D8" />
+                <path d="M10,54 C14,14 114,14 118,54 Z" fill="#FFFFFF" fill-opacity="0.86" />
+                <rect x="6" y="48" width="116" height="9" fill="#E4E4E0" />
               </g>
 
               <!-- Bottle -->
               <g transform="translate(514, 132)">
-                <rect x="36" y="0" width="36" height="32" rx="4" fill="#1F2026" />
-                <path d="M40,32 L40,78 C40,104 12,118 12,150 L12,292 C12,300 20,304 54,304 C88,304 96,300 96,292 L96,150 C96,118 68,104 68,78 L68,32 Z" fill="url(#heroFallbackGlass)" />
-                <rect x="22" y="146" width="8" height="142" rx="4" fill="#FFFFFF" fill-opacity="0.3" />
-                <rect x="12" y="168" width="84" height="102" fill="#FAF7F0" />
-                <rect x="18" y="176" width="72" height="6" :fill="colorHex" />
-                <text x="54" y="224" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="11" font-weight="700" fill="#181715">
+                <rect x="36" y="0" width="36" height="32" fill="#0A0A0A" />
+                <path d="M40,32 L40,78 C40,104 12,118 12,150 L12,292 C12,300 20,304 54,304 C88,304 96,300 96,292 L96,150 C96,118 68,104 68,78 L68,32 Z" fill="url(#heroSwissGlass)" />
+                <rect x="22" y="146" width="7" height="142" fill="#FFFFFF" fill-opacity="0.28" />
+                <rect x="12" y="168" width="84" height="102" fill="#FFFFFF" />
+                <rect x="18" y="176" width="72" height="5" :fill="colorHex" />
+                <text x="54" y="224" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="11" font-weight="600" fill="#0A0A0A">
                   {{ displayBrand.slice(0, 12) }}
                 </text>
-                <text x="54" y="244" text-anchor="middle" font-family="monospace" font-size="8" fill="#6E6A63">250ML STUDIO</text>
+                <text x="54" y="244" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#8A8A86">01 / 250ML</text>
               </g>
 
               <!-- Center Standing Pouch -->
               <g transform="translate(274, 108)">
-                <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#heroFallbackPouch)" />
-                <line x1="18" y1="38" x2="194" y2="38" stroke="#D2C9BA" stroke-width="4" />
-                <rect x="28" y="64" width="156" height="224" rx="4" fill="#FAF8F3" />
-                <rect x="42" y="80" width="128" height="8" :fill="colorHex" />
-                <circle cx="106" cy="142" r="20" fill="none" stroke="#181715" stroke-width="4" stroke-dasharray="95 35" />
-                <circle cx="106" cy="142" r="6" :fill="colorHex" />
-                <text x="106" y="204" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="18" font-weight="700" fill="#181715">
+                <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#heroSwissPouch)" />
+                <line x1="18" y1="38" x2="194" y2="38" stroke="#D9D9D5" stroke-width="2" />
+                <rect x="28" y="64" width="156" height="224" fill="#FFFFFF" stroke="#D9D9D5" stroke-width="1" />
+                <rect x="42" y="80" width="128" height="5" :fill="colorHex" />
+                <path d="M92 154 A20 20 0 1 1 120 154" fill="none" stroke="#0A0A0A" stroke-width="3.5" />
+                <circle cx="106" cy="140" r="5" :fill="colorHex" />
+                <text x="106" y="204" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="18" font-weight="600" fill="#0A0A0A">
                   {{ displayBrand }}
                 </text>
-                <text x="106" y="228" text-anchor="middle" font-family="monospace" font-size="10" fill="#57534E">PRODUK PILIHAN · 250G</text>
+                <text x="106" y="228" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#8A8A86">PRODUK PILIHAN · 250G</text>
               </g>
             </svg>
           </div>
 
-          <!-- Client-Only Photoreal Three.js Canvas -->
+          <!-- Client-Only Lazy Three.js Stage -->
           <ClientOnly>
             <div
               v-show="sceneReady && !staticFallback"
@@ -920,69 +936,56 @@ onBeforeUnmount(() => {
             ></div>
           </ClientOnly>
 
-          <!-- Subtle Studio Vignette Overlay (CSS Only) -->
-          <div
-            aria-hidden="true"
-            class="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(11,11,15,0.14)]"
-          ></div>
-
           <!-- Camera Flash Overlay on "Foto!" -->
           <div
             aria-hidden="true"
-            class="pointer-events-none absolute inset-0 bg-white z-30 transition-opacity duration-300"
+            class="pointer-events-none absolute inset-0 bg-white z-30 transition-opacity duration-300 ease-out"
             :class="cameraFlashActive ? 'opacity-90' : 'opacity-0'"
           ></div>
 
-          <!-- Following Brutalist Caption Tag on Hover -->
+          <!-- Sharp 1px Swiss Hover Caption Tag -->
           <div
             v-if="hoveredCaption.visible && sceneReady && !staticFallback"
             aria-hidden="true"
-            class="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full px-2.5 py-1 bg-yellow text-ink border-2 border-ink font-mono text-[11px] font-bold uppercase tracking-wider shadow-brutal-sm"
+            class="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full px-2.5 py-1.5 bg-white text-black border border-black swiss-mono whitespace-nowrap"
             :style="{ left: `${hoveredCaption.x}px`, top: `${hoveredCaption.y}px` }"
           >
             {{ hoveredCaption.text }}
           </div>
+        </div>
 
-          <!-- Top-Right "Foto!" & "Ganti warna" Neo-Brutalist Controls -->
-          <div
-            v-if="sceneReady && !staticFallback"
-            class="absolute top-3 right-3 z-20 flex items-center gap-2"
-          >
+        <!-- Bottom Accessible Product Switcher Bar -->
+        <div
+          v-if="sceneReady && !staticFallback"
+          class="px-4 sm:px-5 border-t border-line bg-white flex items-center justify-between gap-6 overflow-x-auto no-scrollbar"
+        >
+          <div class="flex items-center gap-5" role="group" aria-label="Pilih produk tengah di studio">
             <button
+              v-for="(prod, pIdx) in heroTabProducts"
+              :key="prod.id"
               type="button"
-              class="px-3 py-1.5 bg-paper hover:bg-yellow border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-              @click="handleCycleColor"
+              :aria-pressed="productId === prod.id ? 'true' : 'false'"
+              class="py-3 -mb-px border-b-2 inline-flex items-baseline gap-1.5 shrink-0 transition-colors duration-300 ease-out"
+              :class="
+                productId === prod.id
+                  ? 'border-signal text-black font-medium'
+                  : 'border-transparent text-dark-gray hover:text-black'
+              "
+              @click="selectHeroProduct(prod.id)"
             >
-              Ganti warna
-            </button>
-            <button
-              type="button"
-              class="px-3 py-1.5 bg-yellow hover:bg-cyan border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-              @click="handleTakePhoto"
-            >
-              📸 Foto!
-            </button>
-          </div>
-
-          <!-- Bottom Accessible Product Switcher Tabs -->
-          <div
-            v-if="sceneReady && !staticFallback"
-            class="absolute bottom-3 inset-x-3 z-20 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5"
-          >
-            <div class="flex items-center gap-1.5" role="group" aria-label="Pilih produk tengah di studio">
-              <button
-                v-for="prod in heroTabProducts"
-                :key="prod.id"
-                type="button"
-                :aria-pressed="productId === prod.id ? 'true' : 'false'"
-                class="px-2.5 py-1 border-2 border-ink font-mono text-[11px] font-bold shrink-0 transition-colors shadow-brutal-sm"
-                :class="productId === prod.id ? 'bg-ink text-paper' : 'bg-paper/95 text-ink hover:bg-yellow'"
-                @click="selectHeroProduct(prod.id)"
+              <span
+                class="swiss-mono"
+                :class="productId === prod.id ? 'text-signal' : 'text-mid-gray'"
               >
-                {{ prod.shortName }}
-              </button>
-            </div>
+                {{ String(pIdx + 1).padStart(2, '0') }}
+              </span>
+              <span class="text-xs sm:text-sm tracking-[-0.01em]">{{ prod.shortName }}</span>
+            </button>
           </div>
+
+          <span class="hidden xl:inline swiss-mono text-dark-gray shrink-0">
+            GESER PANGGUNG · KLIK OBJEK UNTUK PANTUL
+          </span>
         </div>
       </div>
     </div>

@@ -1,86 +1,132 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+
 const reviews = [
   {
     name: 'Teh Rini Suryani',
     business: 'Kriuk Singkong Rempah · Bandung',
-    badge: 'Omzet Naik 2x',
-    avatarBg: 'bg-yellow',
-    initials: 'RS',
+    metric: 'DITERIMA DI 9 TOKO OLEH-OLEH',
     quote:
-      'Dulu keripik saya cuma pakai plastik bening dan stiker hitam putih, sering ditolak toko oleh-oleh. Setelah digarap ulang kemasan dan logonya oleh Arc Lab, langsung diterima di 9 toko besar!'
+      'Dulu keripik saya hanya memakai plastik bening dan stiker hitam putih. Setelah kemasan dan logonya ditata ulang oleh Arc Lab, langsung diterima di sembilan toko besar.'
   },
   {
     name: 'Dimas Prakoso',
     business: 'Kopi Titik Kumpul · Yogyakarta',
-    badge: 'Selesai 3 Hari',
-    avatarBg: 'bg-cyan',
-    initials: 'DP',
+    metric: 'SELESAI DALAM 3 HARI KERJA',
     quote:
-      'Paling suka sama kecepatan dan komunikasinya. Belum punya bayangan konsep pun tetap dibantu cari referensi warna sampai pas. File kaleng dan cup langsung siap naik cetak tanpa revisi ukuran dari percetakan.'
+      'Komunikasinya sangat terstruktur. Belum punya bayangan konsep pun tetap dibantu memetakan arah visual sampai pas, dan file kaleng langsung naik cetak tanpa revisi ukuran.'
   },
   {
     name: 'Nadia Maharani',
     business: 'Lumea Sabun Alami · Surabaya',
-    badge: 'Paket Kombo Rp499rb',
-    avatarBg: 'bg-coral text-paper',
-    initials: 'NM',
+    metric: 'PAKET KOMBO RP499.000',
     quote:
-      'Ambil Paket Kombo Rp499.000 benar-benar balik modal cepat. Dapat logo, dus kemasan, banner bazar, sampai template feed Instagram yang bikin akun bisnis baru saya kelihatan seperti brand mapan.'
+      'Paket Kombo Rp499.000 benar-benar efisien. Dapat logo, dus kemasan, banner bazar, hingga sistem feed Instagram yang membuat brand baru kami tampil mapan.'
+  },
+  {
+    name: 'Hendra Wijaya',
+    business: 'Sambal Roa Manado Asli · Makassar',
+    metric: 'PENJUALAN MARKETPLACE NAIK 3X',
+    quote:
+      'Label toples kaca dan foto mockup 3D dari Arc Lab langsung menaikkan rasio klik toko kami di marketplace tanpa perlu sewa studio foto mahal.'
+  },
+  {
+    name: 'Sari Kusumawardani',
+    business: 'Teh Seduh Botanika · Solo',
+    metric: 'SIAP MASUK KAFE & RITEL MODERN',
+    quote:
+      'Tipografi kemasannya bersih dan sangat mudah dibaca pembeli. Semua informasi PIRT, komposisi, dan kode batang tertata presisi di atas standing pouch.'
   }
 ]
+
+const currentIndex = ref(0)
+
+const currentReview = computed(() => reviews[currentIndex.value] || reviews[0])
+
+const formattedIndex = computed(
+  () => `${String(currentIndex.value + 1).padStart(2, '0')} / ${String(reviews.length).padStart(2, '0')}`
+)
+
+function prevQuote() {
+  currentIndex.value = (currentIndex.value - 1 + reviews.length) % reviews.length
+}
+
+function nextQuote() {
+  currentIndex.value = (currentIndex.value + 1) % reviews.length
+}
 </script>
 
 <template>
-  <section id="testimoni" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper-dark/60">
-    <div class="max-w-7xl mx-auto">
-      <div v-reveal class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-        <div>
-          <span class="brutal-tag bg-indigo text-paper mb-3">CERITA KLIEN // LAB 06</span>
-          <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-            Dipercaya Pelaku UMKM Indonesia
-          </h2>
+  <section id="testimoni" class="py-20 sm:py-28 lg:py-32 bg-off-white border-y border-line">
+    <div class="swiss-container">
+      <!-- Numbered Swiss Section Header -->
+      <div v-reveal class="mb-14 sm:mb-16">
+        <div class="swiss-section-rule mb-5"></div>
+        <div class="swiss-grid gap-y-6 items-end">
+          <div class="col-span-4 lg:col-span-2">
+            <span class="swiss-mono text-signal">06 / TESTIMONI</span>
+          </div>
+          <div class="col-span-4 lg:col-span-6">
+            <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.03em] leading-[0.98] text-black text-left">
+              Suara pelaku UMKM.
+            </h2>
+          </div>
+          <div class="col-span-4 lg:col-span-4">
+            <p class="text-sm sm:text-base text-dark-gray leading-relaxed text-left">
+              Lebih dari 120 usaha kuliner, kopi, kriya, dan perawatan lokal mempercayakan identitas kemasannya kepada Arc Lab.
+            </p>
+          </div>
         </div>
-        <p class="max-w-md text-sm sm:text-base text-ink/80">
-          Lebih dari 150 brand kuliner, fesyen lokal, kriya, dan produk herbal telah merapikan tampilan visualnya bersama Arc Lab.
-        </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <article
-          v-for="(rev, idx) in reviews"
-          :key="rev.name"
-          v-reveal="idx * 80"
-          class="brutal-card p-6 sm:p-7 flex flex-col justify-between gap-6 bg-paper"
-        >
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-4">
-              <div class="font-mono text-sm tracking-widest text-ink" aria-label="Rating 5 dari 5 bintang">
-                ★★★★★
+      <!-- Single Large Left-Aligned Grotesk Quote (40-64px) -->
+      <div v-reveal="80" class="swiss-grid">
+        <div class="col-span-4 lg:col-start-3 lg:col-span-10">
+          <div class="min-h-[240px] sm:min-h-[270px] lg:min-h-[300px] flex items-start">
+            <Transition name="quote-swiss" mode="out-in">
+              <blockquote
+                :key="currentIndex"
+                class="font-display text-[32px] sm:text-[42px] lg:text-[52px] xl:text-[60px] font-medium tracking-[-0.03em] leading-[1.12] text-black text-left"
+              >
+                “{{ currentReview.quote }}”
+              </blockquote>
+            </Transition>
+          </div>
+
+          <!-- Mono Attribution + Text Prev/Next Controls with Index "02 / 05" -->
+          <div class="mt-10 pt-6 border-t border-black flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div class="text-left space-y-1.5">
+              <div class="swiss-mono text-black font-semibold">
+                {{ currentReview.name }} — {{ currentReview.business }}
               </div>
-              <span class="px-2.5 py-1 bg-yellow border-2 border-ink font-mono text-[11px] font-bold uppercase">
-                {{ rev.badge }}
+              <div class="swiss-mono text-signal">
+                {{ currentReview.metric }}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-6 shrink-0" role="group" aria-label="Navigasi testimoni klien">
+              <button
+                type="button"
+                aria-label="Testimoni sebelumnya"
+                class="py-1 font-mono text-lg text-black hover:text-signal transition-colors duration-300 ease-out"
+                @click="prevQuote"
+              >
+                ←
+              </button>
+              <span class="swiss-mono text-black tabular-nums" aria-live="polite">
+                {{ formattedIndex }}
               </span>
-            </div>
-
-            <blockquote class="text-sm sm:text-base text-ink/90 leading-relaxed">
-              “{{ rev.quote }}”
-            </blockquote>
-          </div>
-
-          <div class="pt-4 border-t-2 border-ink flex items-center gap-3.5">
-            <div
-              class="w-11 h-11 border-2 border-ink font-display font-bold text-sm flex items-center justify-center shrink-0 shadow-brutal-sm"
-              :class="rev.avatarBg"
-              aria-hidden="true"
-            >
-              {{ rev.initials }}
-            </div>
-            <div>
-              <div class="font-display font-bold text-base leading-tight">{{ rev.name }}</div>
-              <div class="font-mono text-xs text-ink/70 mt-0.5">{{ rev.business }}</div>
+              <button
+                type="button"
+                aria-label="Testimoni berikutnya"
+                class="py-1 font-mono text-lg text-black hover:text-signal transition-colors duration-300 ease-out"
+                @click="nextQuote"
+              >
+                →
+              </button>
             </div>
           </div>
-        </article>
+        </div>
       </div>
     </div>
   </section>

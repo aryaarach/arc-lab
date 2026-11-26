@@ -54,149 +54,159 @@ function onKeyDown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <section id="transformasi" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper">
-    <div class="max-w-7xl mx-auto">
-      <!-- Section Header -->
-      <div v-reveal class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
-        <div>
-          <span class="brutal-tag bg-coral text-paper mb-3">STUDI KASUS // LAB 03</span>
-          <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-            Sebelum vs Sesudah Rebranding
-          </h2>
+  <section id="transformasi" class="py-20 sm:py-28 lg:py-32 bg-white">
+    <div class="swiss-container">
+      <!-- Numbered Swiss Section Header -->
+      <div v-reveal class="mb-14 sm:mb-16">
+        <div class="swiss-section-rule mb-5"></div>
+        <div class="swiss-grid gap-y-6 items-end">
+          <div class="col-span-4 lg:col-span-2">
+            <span class="swiss-mono text-signal">03 / STUDI KASUS</span>
+          </div>
+          <div class="col-span-4 lg:col-span-6">
+            <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.03em] leading-[0.98] text-black text-left">
+              Sebelum &amp; sesudah rebranding.
+            </h2>
+          </div>
+          <div class="col-span-4 lg:col-span-4">
+            <p class="text-sm sm:text-base text-dark-gray leading-relaxed text-left">
+              Geser garis pembatas (atau tekan tombol panah kiri dan kanan) untuk membandingkan daya tarik kemasan produk UMKM yang sama di rak ritel.
+            </p>
+          </div>
         </div>
-        <p class="max-w-md text-sm sm:text-base text-ink/80">
-          Geser pembatas di bawah (atau gunakan tombol panah kiri/kanan pada keyboard) untuk melihat bagaimana kemasan produk yang sama naik kelas di rak toko.
-        </p>
       </div>
 
-      <!-- Interactive Comparison Stage -->
-      <div v-reveal="100" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-        <div class="lg:col-span-8">
+      <!-- 12-Col Layout: 8-Col Sharp Comparison Frame + 4-Col Metrics -->
+      <div v-reveal="80" class="swiss-grid gap-y-10 items-start">
+        <!-- 8-Col Sharp Frame -->
+        <div class="col-span-4 lg:col-span-8 border border-black bg-white rounded-none">
+          <!-- Top Mono Status Bar -->
+          <div class="px-4 py-2.5 border-b border-line flex items-center justify-between swiss-mono">
+            <span class="text-black">SEBELUM / SESUDAH</span>
+            <span class="text-dark-gray"> RASIO PRATINJAU {{ Math.round(position) }}% </span>
+          </div>
+
           <div
             ref="trackRef"
             data-cursor-grow
-            class="relative w-full aspect-[4/3] sm:aspect-[16/10] border-2 border-ink shadow-brutal-lg overflow-hidden select-none touch-pan-y bg-paper-dark"
+            class="relative w-full aspect-[4/3] sm:aspect-[16/10] overflow-hidden select-none touch-pan-y bg-off-white"
             @pointerdown="onPointerDown"
             @pointermove="onPointerMove"
             @pointerup="onPointerUp"
             @pointercancel="onPointerUp"
           >
             <!-- LAYER 1: BEFORE (Base Full Width) -->
-            <div class="absolute inset-0 w-full h-full bg-[#E5E2DC] flex items-center justify-center p-4">
+            <div class="absolute inset-0 w-full h-full bg-[#E6E6E2] flex items-center justify-center p-4">
               <svg
                 viewBox="0 0 800 500"
                 class="w-full h-full"
                 role="img"
                 aria-label="Desain kemasan lama sebelum rebranding: plastik polos dengan stiker seadanya yang kurang terbaca"
               >
-                <rect width="800" height="500" fill="#DDD9D0" />
-                <!-- Dull background grid -->
-                <g stroke="#B8B3A8" stroke-width="1">
-                  <line x1="0" y1="400" x2="800" y2="400" />
-                  <line x1="120" y1="0" x2="120" y2="500" />
-                  <line x1="680" y1="0" x2="680" y2="500" />
-                </g>
+                <rect width="800" height="500" fill="#E6E6E2" />
+                <line x1="0" y1="412" x2="800" y2="412" stroke="#C8C8C2" stroke-width="1" />
 
                 <!-- Plain Plastic Pouch -->
-                <rect x="255" y="65" width="290" height="375" rx="22" fill="#EDEAE2" stroke="#8C877E" stroke-width="3" />
-                <line x1="255" y1="108" x2="545" y2="108" stroke="#A6A197" stroke-width="2" stroke-dasharray="6 6" />
-                <!-- Generic monochrome sticker -->
-                <rect x="292" y="168" width="216" height="175" fill="#FAF8F5" stroke="#99948B" stroke-width="2" />
-                <text x="400" y="206" text-anchor="middle" font-family="serif" font-size="18" fill="#57544F">Keripik Singkong</text>
-                <text x="400" y="236" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#44423E">"BU RINI"</text>
-                <line x1="316" y1="252" x2="484" y2="252" stroke="#B5B0A6" stroke-width="1.5" />
-                <text x="400" y="278" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#6E6A63">Rasa Balado Pedas Manis</text>
-                <text x="400" y="302" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#8A857C">Enak, Gurih, Renyah Tanpa Pengawet</text>
-                <text x="400" y="326" text-anchor="middle" font-family="monospace" font-size="11" fill="#8A857C">Hub: 0812-xxxx-xxxx</text>
+                <rect x="255" y="62" width="290" height="380" fill="#F0F0EC" stroke="#A6A6A0" stroke-width="1.5" />
+                <line x1="255" y1="106" x2="545" y2="106" stroke="#B6B6B0" stroke-width="1" stroke-dasharray="6 6" />
 
-                <!-- Callout notes -->
+                <!-- Generic Amateur Sticker -->
+                <rect x="292" y="168" width="216" height="176" fill="#FAFAF8" stroke="#A8A8A2" stroke-width="1" />
+                <text x="400" y="206" text-anchor="middle" font-family="serif" font-size="18" fill="#5A5A56">Keripik Singkong</text>
+                <text x="400" y="236" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#3A3A36">"BU RINI"</text>
+                <line x1="316" y1="252" x2="484" y2="252" stroke="#C4C4BE" stroke-width="1" />
+                <text x="400" y="278" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#666662">Rasa Balado Pedas Manis</text>
+                <text x="400" y="302" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7A7A76">Enak, Gurih, Renyah Tanpa Pengawet</text>
+                <text x="400" y="326" text-anchor="middle" font-family="monospace" font-size="11" fill="#7A7A76">Hub: 0812-xxxx-xxxx</text>
+
+                <!-- Sharp 1px Diagnostic Notes -->
                 <g>
-                  <rect x="44" y="140" width="176" height="62" fill="#FAF8F5" stroke="#7A756C" stroke-width="2" />
-                  <text x="60" y="166" font-family="monospace" font-size="12" font-weight="700" fill="#57544F">✕ KURANG KONTRAS</text>
-                  <text x="60" y="186" font-family="sans-serif" font-size="12" fill="#6E6A63">Sulit dilirik di etalase</text>
+                  <rect x="44" y="142" width="178" height="60" fill="#FFFFFF" stroke="#B6B6B0" stroke-width="1" />
+                  <text x="60" y="166" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#767672">01 / KURANG KONTRAS</text>
+                  <text x="60" y="186" font-family="Space Grotesk, sans-serif" font-size="12.5" fill="#3A3A36">Tenggelam di etalase</text>
 
-                  <rect x="578" y="250" width="180" height="62" fill="#FAF8F5" stroke="#7A756C" stroke-width="2" />
-                  <text x="594" y="276" font-family="monospace" font-size="12" font-weight="700" fill="#57544F">✕ TANPA HIERARKI</text>
-                  <text x="594" y="296" font-family="sans-serif" font-size="12" fill="#6E6A63">Teks menumpuk &amp; kecil</text>
+                  <rect x="578" y="252" width="180" height="60" fill="#FFFFFF" stroke="#B6B6B0" stroke-width="1" />
+                  <text x="594" y="276" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#767672">02 / TANPA HIERARKI</text>
+                  <text x="594" y="296" font-family="Space Grotesk, sans-serif" font-size="12.5" fill="#3A3A36">Informasi menumpuk</text>
                 </g>
               </svg>
 
-              <span class="absolute top-3 right-3 px-3 py-1 bg-paper border-2 border-ink font-mono text-xs font-bold uppercase shadow-brutal-sm">
-                SEBELUM · Kemasan Polos
+              <span class="absolute top-3 right-3 px-2.5 py-1 bg-white border border-black swiss-mono text-black">
+                SEBELUM
               </span>
             </div>
 
             <!-- LAYER 2: AFTER (Clipped by position%) -->
             <div
-              class="absolute inset-0 w-full h-full bg-[#22E6D0] flex items-center justify-center p-4"
+              class="absolute inset-0 w-full h-full bg-off-white flex items-center justify-center p-4"
               :style="{ clipPath: `inset(0 ${100 - position}% 0 0)` }"
             >
               <svg
                 viewBox="0 0 800 500"
                 class="w-full h-full"
                 role="img"
-                aria-label="Desain kemasan baru hasil rebranding Arc Lab: warna cerah, tipografi tegas, ilustrasi modern, dan siap masuk ritel modern"
+                aria-label="Desain kemasan baru hasil rebranding Arc Lab bergaya Swiss Minimal: tipografi tajam, kontras tinggi, dan siap masuk ritel modern"
               >
-                <rect width="800" height="500" fill="#22E6D0" />
-                <!-- Neo-Brutalist Lab Grid -->
-                <g stroke="#0B0B0F" stroke-opacity="0.12" stroke-width="1.5">
-                  <line x1="0" y1="100" x2="800" y2="100" />
-                  <line x1="0" y1="200" x2="800" y2="200" />
-                  <line x1="0" y1="300" x2="800" y2="300" />
-                  <line x1="0" y1="400" x2="800" y2="400" />
-                  <line x1="160" y1="0" x2="160" y2="500" />
-                  <line x1="640" y1="0" x2="640" y2="500" />
+                <rect width="800" height="500" fill="#F2F2F0" />
+                <!-- Architectural 1px Studio Grid Lines -->
+                <g stroke="#D9D9D5" stroke-width="1">
+                  <line x1="0" y1="412" x2="800" y2="412" />
+                  <line x1="200" y1="0" x2="200" y2="500" />
+                  <line x1="600" y1="0" x2="600" y2="500" />
                 </g>
 
-                <!-- Hard shadow behind upgraded pouch -->
-                <rect x="267" y="69" width="290" height="382" rx="22" fill="#0B0B0F" />
-                <!-- Upgraded Full-Print Standing Pouch -->
-                <rect x="255" y="57" width="290" height="382" rx="22" fill="#FFD84D" stroke="#0B0B0F" stroke-width="4" />
-                <!-- Top Tear Notch Header -->
-                <path d="M255 79 Q255 57 277 57 L523 57 Q545 57 545 79 L545 112 L255 112 Z" fill="#0B0B0F" />
-                <text x="400" y="91" text-anchor="middle" font-family="monospace" font-size="13" font-weight="700" fill="#FFD84D">ZIP-LOCK SEGAR · KUALITAS PREMIUM</text>
+                <!-- Upgraded Matte Black Standing Pouch -->
+                <rect x="255" y="56" width="290" height="386" fill="#0A0A0A" />
+                <!-- Signal Red Top Band -->
+                <rect x="255" y="56" width="290" height="44" fill="#E63312" />
+                <text x="278" y="83" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="500" letter-spacing="1.4" fill="#FFFFFF">
+                  NO. 01 / KEMASAN KEDAP UDARA
+                </text>
 
-                <!-- Brand Arc Emblem -->
-                <circle cx="400" cy="162" r="32" fill="#5B5BFF" stroke="#0B0B0F" stroke-width="3.5" />
-                <path d="M384 170 A18 18 0 1 1 416 170" fill="none" stroke="#F4F1EA" stroke-width="4" stroke-linecap="round" />
-                <circle cx="400" cy="162" r="5" fill="#FFD84D" />
+                <!-- Crisp White Swiss Grid Front Label -->
+                <rect x="278" y="122" width="244" height="270" fill="#FFFFFF" />
+                <line x1="296" y1="162" x2="504" y2="162" stroke="#D9D9D5" stroke-width="1" />
+                <line x1="296" y1="336" x2="504" y2="336" stroke="#D9D9D5" stroke-width="1" />
 
-                <!-- Bold Brand Name -->
-                <rect x="280" y="206" width="240" height="84" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3.5" />
-                <text x="400" y="242" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="900" fill="#0B0B0F">KRIUK RINI</text>
-                <text x="400" y="272" text-anchor="middle" font-family="monospace" font-size="13" font-weight="700" fill="#5B5BFF">SINGKONG REMPAH ASLI</text>
+                <text x="296" y="148" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#8A8A86">SINGKONG REMPAH</text>
+                <text x="504" y="148" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#E63312">200G</text>
 
-                <!-- Variant Pill -->
-                <rect x="296" y="308" width="208" height="44" rx="22" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="3.5" />
-                <text x="400" y="336" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="800" fill="#F4F1EA">🔥 BALADO DAUN JERUK</text>
+                <!-- Pure Black Arc + Red Dot Mark -->
+                <path d="M310 206 A13 13 0 1 1 329 206" fill="none" stroke="#0A0A0A" stroke-width="3" />
+                <circle cx="319.5" cy="196.5" r="3.5" fill="#E63312" />
 
-                <!-- Bottom Info Strip -->
-                <text x="315" y="408" font-family="monospace" font-size="13" font-weight="700" fill="#0B0B0F">NETTO 200G</text>
-                <rect x="438" y="390" width="80" height="26" fill="#0B0B0F" />
-                <text x="478" y="408" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="#22E6D0">HALAL ID</text>
+                <!-- Left-Aligned Swiss Grotesk Brand Name -->
+                <text x="296" y="254" font-family="Space Grotesk, sans-serif" font-size="34" font-weight="600" letter-spacing="-1.2" fill="#0A0A0A">
+                  Kriuk Rini.
+                </text>
+                <rect x="296" y="274" width="164" height="28" fill="#0A0A0A" />
+                <text x="306" y="292" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="500" letter-spacing="1" fill="#FFFFFF">
+                  BALADO DAUN JERUK
+                </text>
 
-                <!-- Positive Callouts -->
+                <text x="296" y="362" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#0A0A0A">HALAL ID · P-IRT RESMI</text>
+                <text x="504" y="362" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#8A8A86">BANDUNG</text>
+
+                <!-- Positive Swiss Callouts -->
                 <g>
-                  <rect x="44" y="144" width="184" height="66" fill="#0B0B0F" />
-                  <rect x="38" y="138" width="184" height="66" fill="#F4F1EA" stroke="#0B0B0F" stroke-width="3" />
-                  <text x="54" y="165" font-family="monospace" font-size="12" font-weight="700" fill="#5B5BFF">✓ IDENTITAS KUAT</text>
-                  <text x="54" y="187" font-family="sans-serif" font-size="13" font-weight="700" fill="#0B0B0F">Langsung menonjol!</text>
+                  <rect x="38" y="140" width="184" height="62" fill="#FFFFFF" stroke="#0A0A0A" stroke-width="1" />
+                  <text x="54" y="164" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#E63312">01 / IDENTITAS PRESISI</text>
+                  <text x="54" y="185" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="500" fill="#0A0A0A">Kontras kuat di rak</text>
 
-                  <rect x="582" y="254" width="184" height="66" fill="#0B0B0F" />
-                  <rect x="576" y="248" width="184" height="66" fill="#FFD84D" stroke="#0B0B0F" stroke-width="3" />
-                  <text x="592" y="275" font-family="monospace" font-size="12" font-weight="700" fill="#0B0B0F">✓ SIAP RITEL MODERN</text>
-                  <text x="592" y="297" font-family="sans-serif" font-size="13" font-weight="700" fill="#0B0B0F">PIRT &amp; varian jelas</text>
+                  <rect x="578" y="250" width="184" height="62" fill="#FFFFFF" stroke="#0A0A0A" stroke-width="1" />
+                  <text x="594" y="274" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#E63312">02 / SIAP RITEL MODERN</text>
+                  <text x="594" y="295" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="500" fill="#0A0A0A">PIRT &amp; varian terbaca</text>
                 </g>
               </svg>
 
-              <span class="absolute top-3 left-3 px-3 py-1 bg-yellow border-2 border-ink font-mono text-xs font-bold uppercase shadow-brutal-sm">
-                SESUDAH · Arc Lab Redesign
+              <span class="absolute top-3 left-3 px-2.5 py-1 bg-black text-white border border-black swiss-mono">
+                SESUDAH
               </span>
             </div>
 
-            <!-- Draggable Vertical Divider + Accessible Handle -->
+            <!-- 1px Vertical Divider Line + Small Square Handle -->
             <div
-              class="absolute inset-y-0 z-20 w-1 bg-ink pointer-events-none"
+              class="absolute inset-y-0 z-20 w-px bg-black pointer-events-none"
               :style="{ left: `${position}%` }"
             >
               <button
@@ -208,7 +218,7 @@ function onKeyDown(e: KeyboardEvent) {
                 :aria-valuemax="100"
                 :aria-valuenow="Math.round(position)"
                 :aria-valuetext="`${Math.round(position)} persen tampilan sesudah rebranding`"
-                class="pointer-events-auto absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-yellow hover:bg-coral hover:text-paper border-2 border-ink shadow-brutal-sm flex items-center justify-center font-mono font-bold text-sm cursor-ew-resize focus:outline-none focus:ring-4 focus:ring-indigo"
+                class="pointer-events-auto absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-none bg-black hover:bg-signal text-white border border-black flex items-center justify-center font-mono text-xs cursor-ew-resize transition-colors duration-300 ease-out"
                 @keydown="onKeyDown"
               >
                 ↔
@@ -217,26 +227,34 @@ function onKeyDown(e: KeyboardEvent) {
           </div>
         </div>
 
-        <!-- Impact Summary Card (4 cols) -->
-        <div v-reveal="180" class="lg:col-span-4 flex flex-col gap-5">
-          <div class="brutal-card bg-yellow p-6">
-            <div class="font-mono text-xs font-bold uppercase tracking-wider mb-2">DAMPAK NYATA DI PASAR</div>
-            <h3 class="font-display text-2xl font-bold leading-snug mb-3">
-              Produk enak saja belum cukup kalau pembeli ragu mencoba.
+        <!-- 4-Col Impact Summary with 1px Rules (No Cards) -->
+        <div v-reveal="140" class="col-span-4 lg:col-span-4 border-t border-black pt-6 flex flex-col gap-8">
+          <div>
+            <span class="swiss-mono text-dark-gray block mb-3">DAMPAK KOMERSIAL</span>
+            <h3 class="font-display text-2xl sm:text-3xl font-medium tracking-[-0.025em] leading-tight text-black mb-3 text-left">
+              Rasa unggulan butuh kemasan yang meyakinkan pada detik pertama.
             </h3>
-            <p class="text-sm text-ink/85 leading-relaxed">
-              Kemasan yang rapi menaikkan nilai jual produk UMKM Rp5.000–Rp15.000 per bungkus tanpa mengubah resep di dalamnya.
+            <p class="text-sm sm:text-base text-dark-gray leading-relaxed text-left">
+              Tata letak yang bersih menaikkan persepsi harga jual Rp5.000–Rp15.000 per unit tanpa mengubah komposisi produk di dalamnya.
             </p>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="brutal-card p-4 bg-paper">
-              <div class="font-display text-3xl font-bold text-indigo">3,2x</div>
-              <div class="font-mono text-xs text-ink/75 mt-1">Lebih sering diklik di katalog Shopee</div>
+          <div class="grid grid-cols-2 gap-6 pt-6 border-t border-line">
+            <div class="text-left">
+              <div class="font-display text-4xl sm:text-5xl font-medium tracking-[-0.035em] leading-none text-signal">
+                3,2x
+              </div>
+              <p class="swiss-mono text-dark-gray mt-3 leading-relaxed">
+                RASIO KLIK KATALOG MARKETPLACE
+              </p>
             </div>
-            <div class="brutal-card p-4 bg-paper">
-              <div class="font-display text-3xl font-bold text-coral">100%</div>
-              <div class="font-mono text-xs text-ink/75 mt-1">Siap masuk toko oleh-oleh &amp; kafe</div>
+            <div class="text-left border-l border-line pl-6">
+              <div class="font-display text-4xl sm:text-5xl font-medium tracking-[-0.035em] leading-none text-black">
+                100%
+              </div>
+              <p class="swiss-mono text-dark-gray mt-3 leading-relaxed">
+                STANDAR TOKO OLEH-OLEH &amp; RITEL
+              </p>
             </div>
           </div>
         </div>

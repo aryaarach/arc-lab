@@ -3,46 +3,44 @@ const config = useAppConfig()
 
 const services = [
   {
+    idx: '01',
     code: 'SRV-01',
     title: 'Desain Logo & Identitas',
     price: 'Mulai Rp150.000',
     duration: '2–3 Hari',
-    bg: 'bg-yellow',
     span: 'lg:col-span-7',
-    desc: 'Logo orisinal yang mudah dikenali di papan toko, stiker kemasan, hingga foto profil marketplace.',
-    deliverables: ['3 Konsep Awal Berbeda', 'Revisi Terarah 3x', 'Panduan Warna & Font Singkat', 'Master AI, EPS, SVG, PDF & PNG Transparan']
+    desc: 'Logo orisinal yang presisi di papan toko, stiker kemasan, hingga foto profil marketplace.',
+    deliverables: '3 KONSEP AWAL · REVISI 3X · PANDUAN WARNA & FONT · MASTER AI/EPS/SVG/PDF/PNG'
   },
   {
+    idx: '02',
     code: 'SRV-02',
     title: 'Banner & Spanduk Toko',
     price: 'Mulai Rp99.000',
     duration: '1–2 Hari',
-    bg: 'bg-cyan',
     span: 'lg:col-span-5',
-    desc: 'X-Banner bazar, spanduk warung/booth, hingga header Shopee & Tokopedia beresolusi tajam.',
-    deliverables: ['Ukuran Presisi Siap Cetak CMYK', 'Versi Digital RGB', 'Tata Letak Harga Mudah Dibaca']
+    desc: 'X-Banner bazar, spanduk booth, dan header marketplace beresolusi tajam yang mudah dibaca.',
+    deliverables: 'CETAK CMYK PRESISI · VERSI DIGITAL RGB · HIERARKI HARGA JELAS'
   },
   {
+    idx: '03',
     code: 'SRV-03',
     title: 'Kemasan & Mockup 3D',
     price: 'Mulai Rp200.000',
     duration: '3–4 Hari',
-    bg: 'bg-paper',
-    accentBadge: 'bg-coral text-paper',
     span: 'lg:col-span-5',
-    desc: 'Desain standing pouch, label botol, stiker toples, dan dus produk lengkap dengan pola pisau cetak (dieline).',
-    deliverables: ['File Siap Kirim Percetakan', 'Mockup 3D Realistis untuk Katalog', 'Slot Barcode, PIRT & Komposisi Rapi']
+    desc: 'Desain standing pouch, label botol, toples, dan dus produk lengkap dengan pola pisau cetak.',
+    deliverables: 'DIELINE SIAP CETAK · MOCKUP 3D KATALOG · SLOT BARCODE, PIRT & HALAL'
   },
   {
+    idx: '04',
     code: 'SRV-04',
     title: 'Feed & Konten Instagram',
     price: 'Mulai Rp250.000',
     duration: '2–4 Hari',
-    bg: 'bg-indigo text-paper',
-    isDark: true,
     span: 'lg:col-span-7',
-    desc: '9 sampai 12 desain konten promosi, edukasi produk, dan testimoni yang seragam agar profil Instagram bisnismu dipercaya pembeli baru.',
-    deliverables: ['9 / 12 Konten Siap Unggah', 'Template Canva / Figma Bisa Diedit Ulang', 'Rekomendasi Urutan Grid Estetik', 'Bonus Cover Highlight']
+    desc: 'Sistem 9–12 konten promosi, edukasi produk, dan testimoni seragam agar profil bisnis dipercaya.',
+    deliverables: '9–12 KONTEN SIAP UNGGAH · TEMPLATE CANVA/FIGMA · COVER HIGHLIGHT'
   }
 ]
 
@@ -53,81 +51,72 @@ function makeServiceWa(title: string) {
 </script>
 
 <template>
-  <section id="layanan" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper">
-    <div class="max-w-7xl mx-auto">
-      <div v-reveal class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-        <div>
-          <span class="brutal-tag bg-yellow text-ink mb-3">KATALOG STUDIO // LAB 01</span>
-          <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-            Layanan Desain Fokus UMKM
-          </h2>
+  <section id="layanan" class="py-20 sm:py-28 lg:py-32 bg-white">
+    <div class="swiss-container">
+      <!-- Numbered Swiss Section Header with 1px Draw-In Rule -->
+      <div v-reveal class="mb-14 sm:mb-16">
+        <div class="swiss-section-rule mb-5"></div>
+        <div class="swiss-grid gap-y-6 items-end">
+          <div class="col-span-4 lg:col-span-2">
+            <span class="swiss-mono text-signal">01 / LAYANAN</span>
+          </div>
+          <div class="col-span-4 lg:col-span-6">
+            <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.03em] leading-[0.98] text-black text-left">
+              Sistem desain fokus UMKM.
+            </h2>
+          </div>
+          <div class="col-span-4 lg:col-span-4">
+            <p class="text-sm sm:text-base text-dark-gray leading-relaxed text-left">
+              Harga transparan tanpa biaya tersembunyi. Seluruh file master diserahkan penuh agar bebas dicetak di mana saja.
+            </p>
+          </div>
         </div>
-        <p class="max-w-md text-sm sm:text-base text-ink/80">
-          Harga transparan tanpa biaya tersembunyi. Semua file master diberikan penuh agar kamu bebas cetak di mana saja.
-        </p>
       </div>
 
-      <!-- Neo-Brutalist Bento Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Strict Modular Grid with 1px Dividers & Black Hover Inversion -->
+      <div class="border-t border-l border-line grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12">
         <article
           v-for="(srv, index) in services"
           :key="srv.code"
-          v-reveal="index * 70"
-          class="border-2 border-ink shadow-brutal p-6 sm:p-8 flex flex-col justify-between gap-6 transition-transform duration-200 hover:-translate-y-1"
-          :class="[srv.bg, srv.span]"
+          v-reveal="index * 60"
+          class="group border-r border-b border-line bg-white hover:bg-black text-black hover:text-white transition-colors duration-300 ease-out p-7 sm:p-10 lg:p-12 flex flex-col justify-between gap-10"
+          :class="srv.span"
         >
           <div>
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-              <span
-                class="px-2.5 py-1 border-2 border-ink font-mono text-xs font-bold uppercase"
-                :class="srv.isDark ? 'bg-yellow text-ink' : (srv.accentBadge || 'bg-paper text-ink')"
-              >
-                {{ srv.code }} · {{ srv.duration }}
+            <!-- Top Row: Large Index Numeral + Mono Price/Duration -->
+            <div class="flex items-start justify-between gap-4 mb-8">
+              <span class="font-display text-5xl sm:text-6xl font-medium tracking-[-0.04em] leading-none text-black group-hover:text-signal transition-colors duration-300">
+                {{ srv.idx }}
               </span>
-              <span
-                class="px-3 py-1 border-2 border-ink font-mono text-sm font-bold"
-                :class="srv.isDark ? 'bg-cyan text-ink' : 'bg-ink text-paper'"
-              >
-                {{ srv.price }}
-              </span>
+              <div class="text-right swiss-mono text-dark-gray group-hover:text-mid-gray transition-colors duration-300 space-y-1.5">
+                <div class="text-black group-hover:text-white font-semibold">{{ srv.price }}</div>
+                <div>{{ srv.duration }}</div>
+              </div>
             </div>
 
-            <h3 class="font-display text-2xl sm:text-3xl font-bold tracking-tight mb-3">
+            <!-- Grotesk Service Title + One-Line Ragged-Right Description -->
+            <h3 class="font-display text-2xl sm:text-3xl font-medium tracking-[-0.03em] leading-tight mb-3 text-left">
               {{ srv.title }}
             </h3>
-            <p class="text-sm sm:text-base leading-relaxed" :class="srv.isDark ? 'text-paper/90' : 'text-ink/85'">
+            <p class="text-sm sm:text-base text-dark-gray group-hover:text-white/80 leading-relaxed text-left max-w-xl transition-colors duration-300">
               {{ srv.desc }}
             </p>
-
-            <ul class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <li
-                v-for="d in srv.deliverables"
-                :key="d"
-                class="flex items-start gap-2 text-xs sm:text-sm font-medium"
-              >
-                <span
-                  class="mt-0.5 inline-flex items-center justify-center w-4 h-4 border border-ink font-mono text-[10px] font-bold shrink-0"
-                  :class="srv.isDark ? 'bg-yellow text-ink border-paper' : 'bg-paper text-ink'"
-                  aria-hidden="true"
-                >✓</span>
-                <span>{{ d }}</span>
-              </li>
-            </ul>
           </div>
 
-          <div class="pt-4 border-t-2 flex items-center justify-between gap-4" :class="srv.isDark ? 'border-paper/30' : 'border-ink'">
-            <span class="font-mono text-xs uppercase tracking-wider" :class="srv.isDark ? 'text-paper/80' : 'text-ink/75'">
-              Gratis Konsultasi Konsep
+          <!-- Bottom Hairline Rule + Mono Deliverables + Small "↗" Link -->
+          <div class="pt-5 border-t border-line group-hover:border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-300">
+            <span class="swiss-mono text-dark-gray group-hover:text-mid-gray leading-relaxed">
+              {{ srv.deliverables }}
             </span>
+
             <a
               :href="makeServiceWa(srv.title)"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 px-4 py-2 border-2 border-ink font-display font-bold text-sm shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-transform"
-              :class="srv.isDark ? 'bg-yellow text-ink' : 'bg-paper hover:bg-yellow text-ink'"
+              class="inline-flex items-center gap-2 shrink-0 font-sans text-sm font-medium tracking-[-0.01em] text-black group-hover:text-white transition-colors duration-300"
             >
-              <span>Pesan Layanan</span>
-              <span aria-hidden="true">→</span>
+              <span>Pesan</span>
+              <span class="swiss-arrow text-signal" aria-hidden="true">↗</span>
             </a>
           </div>
         </article>

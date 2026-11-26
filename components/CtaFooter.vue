@@ -15,72 +15,88 @@ const instagramUrl = computed(() => {
 </script>
 
 <template>
-  <footer id="kontak" class="bg-ink text-paper">
-    <!-- High-Impact Neo-Brutalist Final CTA Banner -->
-    <div class="px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-14">
-      <div
-        v-reveal
-        class="max-w-7xl mx-auto bg-yellow text-ink border-2 border-paper shadow-brutal-white p-8 sm:p-12 lg:p-14 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8"
-      >
-        <div class="max-w-2xl">
-          <span class="inline-flex items-center gap-2 px-3 py-1 bg-ink text-paper font-mono text-xs font-bold uppercase tracking-wider mb-4">
-            <span class="w-2 h-2 rounded-full bg-cyan animate-ping" aria-hidden="true"></span>
-            KONSULTAN DESAIN ONLINE
-          </span>
-          <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
-            Siap bikin produk UMKM-mu tampil meyakinkan minggu ini?
-          </h2>
-          <p class="mt-3 text-base sm:text-lg text-ink/85">
-            Ngobrol santai dulu lewat WhatsApp. Gratis pemetaan konsep visual tanpa paksaan order.
-          </p>
-        </div>
+  <footer id="kontak" class="bg-black text-white">
+    <!-- Giant Swiss CTA Block -->
+    <div class="swiss-container pt-20 sm:pt-28 lg:pt-36 pb-20 sm:pb-28">
+      <div v-reveal>
+        <div class="h-px w-full bg-white/20 mb-6"></div>
+        <p class="swiss-mono text-mid-gray mb-8 flex items-center gap-2.5">
+          <span class="inline-block w-2 h-2 rounded-full bg-signal" aria-hidden="true"></span>
+          <span>08 / KONTAK — KONSULTASI KONSEP GRATIS</span>
+        </p>
 
-        <div class="flex flex-col sm:flex-row lg:flex-col gap-3.5 w-full lg:w-auto shrink-0">
-          <a
-            :href="waFooterUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="brutal-btn bg-indigo text-paper px-7 py-4 text-base sm:text-lg text-center"
-          >
-            <span>Chat WhatsApp Sekarang</span>
-            <span aria-hidden="true">→</span>
-          </a>
-          <a
-            :href="instagramUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="brutal-btn bg-paper text-ink px-7 py-3.5 text-sm text-center"
-          >
-            Lihat Portofolio {{ config.instagramHandle }}
-          </a>
+        <h2
+          class="font-display font-medium text-[54px] sm:text-[84px] lg:text-[116px] xl:text-[140px] tracking-[-0.035em] leading-[0.94] text-white text-left mb-14 sm:mb-20"
+        >
+          Mulai proyekmu<span class="text-signal">.</span>
+        </h2>
+
+        <!-- Large Underlined WhatsApp & Instagram Links from app.config.ts -->
+        <div class="swiss-grid gap-y-6">
+          <div class="col-span-4 lg:col-span-6">
+            <a
+              :href="waFooterUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group py-5 border-b border-white/30 hover:border-signal flex items-baseline justify-between gap-4 transition-colors duration-300 ease-out"
+            >
+              <div class="text-left">
+                <span class="swiss-mono text-mid-gray block mb-2">WHATSAPP LANGSUNG</span>
+                <span class="font-display text-2xl sm:text-3xl lg:text-4xl font-medium tracking-[-0.025em] text-white group-hover:text-signal transition-colors duration-300">
+                  +{{ config.whatsappNumber }}
+                </span>
+              </div>
+              <span class="font-display text-2xl sm:text-3xl text-signal swiss-arrow" aria-hidden="true">↗</span>
+            </a>
+          </div>
+
+          <div class="col-span-4 lg:col-span-6">
+            <a
+              :href="instagramUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group py-5 border-b border-white/30 hover:border-signal flex items-baseline justify-between gap-4 transition-colors duration-300 ease-out"
+            >
+              <div class="text-left">
+                <span class="swiss-mono text-mid-gray block mb-2">PORTOFOLIO INSTAGRAM</span>
+                <span class="font-display text-2xl sm:text-3xl lg:text-4xl font-medium tracking-[-0.025em] text-white group-hover:text-signal transition-colors duration-300">
+                  {{ config.instagramHandle }}
+                </span>
+              </div>
+              <span class="font-display text-2xl sm:text-3xl text-signal swiss-arrow" aria-hidden="true">↗</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Studio Info Bar -->
-    <div class="border-t-2 border-paper/20 px-4 sm:px-6 lg:px-8 py-10">
-      <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-        <div>
-          <div class="inline-block bg-paper px-3 py-1.5 border-2 border-paper mb-3">
-            <img src="/logo.svg" alt="Logo Arc Lab" width="154" height="40" class="h-9 w-auto" />
-          </div>
-          <p class="text-sm text-paper/75 max-w-sm">
-            Studio desain grafis dan identitas kemasan untuk pelaku UMKM di seluruh Indonesia. Cepat, rapi, dan siap cetak.
+    <!-- 12-Col Footer with Small Mono Links & Copyright -->
+    <div class="border-t border-white/20 py-10">
+      <div class="swiss-container swiss-grid gap-y-8 items-start">
+        <div class="col-span-4 lg:col-span-4 text-left space-y-3">
+          <a href="#beranda" aria-label="Arc Lab — Kembali ke atas" class="inline-block">
+            <img src="/logo-light.svg" alt="Arc Lab" width="140" height="30" class="h-7 w-auto" />
+          </a>
+          <p class="swiss-mono text-mid-gray leading-relaxed">
+            {{ config.location }}
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-x-8 gap-y-4 font-mono text-xs uppercase tracking-wider">
-          <a href="#layanan" class="hover:text-yellow transition-colors">Layanan</a>
-          <a href="#mixer" class="hover:text-yellow transition-colors">3D Mixer</a>
-          <a href="#transformasi" class="hover:text-yellow transition-colors">Studi Kasus</a>
-          <a href="#harga" class="hover:text-yellow transition-colors">Harga</a>
-          <a href="#faq" class="hover:text-yellow transition-colors">FAQ</a>
-        </div>
+        <nav
+          aria-label="Tautan Footer"
+          class="col-span-4 lg:col-span-5 flex flex-wrap gap-x-6 gap-y-3 swiss-mono text-mid-gray"
+        >
+          <a href="#layanan" class="hover:text-white transition-colors duration-300">01 / LAYANAN</a>
+          <a href="#mixer" class="hover:text-white transition-colors duration-300">02 / MIXER</a>
+          <a href="#transformasi" class="hover:text-white transition-colors duration-300">03 / KASUS</a>
+          <a href="#alur" class="hover:text-white transition-colors duration-300">04 / PROSES</a>
+          <a href="#harga" class="hover:text-white transition-colors duration-300">05 / HARGA</a>
+          <a href="#faq" class="hover:text-white transition-colors duration-300">07 / FAQ</a>
+        </nav>
 
-        <div class="font-mono text-xs text-paper/75 md:text-right space-y-1">
-          <div>WhatsApp: +{{ config.whatsappNumber }}</div>
-          <div>Instagram: {{ config.instagramHandle }}</div>
-          <div class="text-paper/55 pt-1">© 2026 {{ config.studioName }}. Hak cipta dilindungi.</div>
+        <div class="col-span-4 lg:col-span-3 text-left lg:text-right swiss-mono text-mid-gray space-y-2">
+          <div>{{ config.email }}</div>
+          <div>© 2026 {{ config.studioName }}. HAK CIPTA DILINDUNGI.</div>
         </div>
       </div>
     </div>

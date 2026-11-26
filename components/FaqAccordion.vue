@@ -5,24 +5,24 @@ const openIndex = ref<number | null>(0)
 
 const faqs = [
   {
-    q: 'Bagaimana kalau saya belum punya konsep atau sketsa desain sama sekali?',
-    a: 'Tenang, justru itu tugas kami! Cukup ceritakan produk yang kamu jual, kisaran harga produk, dan siapa pembelinya lewat WhatsApp. Tim Arc Lab akan menyusun rekomendasi gaya warna dan konsep awal secara gratis.'
+    q: 'Bagaimana jika saya belum memiliki konsep atau sketsa desain sama sekali?',
+    a: 'Tidak masalah. Cukup ceritakan produk yang dijual, kisaran harga produk, dan target pembelinya lewat WhatsApp. Tim Arc Lab akan menyusun rekomendasi arah warna, tipografi, dan konsep awal secara gratis.'
   },
   {
     q: 'File apa saja yang saya terima setelah desain selesai?',
-    a: 'Kamu mendapatkan hak milik penuh dan seluruh file master siap pakai: Adobe Illustrator (.AI), .EPS, .PDF siap cetak (CMYK), .SVG, serta gambar .PNG berlatar transparan dan mockup 3D resolusi tinggi.'
+    a: 'Kamu menerima hak milik penuh beserta seluruh file master siap pakai: Adobe Illustrator (.AI), .EPS, .PDF siap cetak (CMYK), .SVG, serta gambar .PNG berlatar transparan dan mockup 3D resolusi tinggi.'
   },
   {
     q: 'Berapa lama waktu pengerjaan dan berapa kali jatah revisi?',
-    a: 'Rata-rata konsep awal dikirim dalam 1–2 hari kerja, dan total selesai hingga serah terima berkisar 2–4 hari kerja. Setiap layanan sudah termasuk 3x sesi revisi terarah agar hasilnya benar-benar pas.'
+    a: 'Konsep awal dikirim dalam 1–2 hari kerja, dan keseluruhan proses hingga serah terima berkisar 2–4 hari kerja. Setiap layanan sudah mencakup 3x sesi revisi terarah.'
   },
   {
-    q: 'Apakah ukuran desain kemasan dijamin pas saat dibawa ke percetakan?',
-    a: 'Ya! Informasikan ukuran kemasan dari vendor percetakanmu (atau jenis kemasan seperti standing pouch 14x22 cm, botol 250 ml, maupun box custom). Kami siapkan garis potong (dieline) dan bleed sesuai standar cetak.'
+    q: 'Apakah ukuran desain kemasan dijamin presisi saat dibawa ke percetakan?',
+    a: 'Ya. Informasikan dimensi kemasan dari vendor percetakanmu (seperti standing pouch 14x22 cm, botol 250 ml, atau dus custom). Kami menyiapkan pola garis potong (dieline) dan area lebihan cetak (bleed) sesuai standar industri.'
   },
   {
-    q: 'Bagaimana sistem pembayarannya? Apakah aman 100% online?',
-    a: 'Diskusi konsep awal 100% gratis tanpa komitmen. Setelah konsep disepakati untuk mulai digarap, cukup DP 50% melalui transfer bank atau QRIS resmi, dan pelunasan 50% dilakukan setelah pratinjau desain disetujui.'
+    q: 'Bagaimana sistem pembayarannya untuk pemesanan daring?',
+    a: 'Diskusi pemetaan konsep awal 100% gratis tanpa komitmen. Setelah konsep disepakati, pengerjaan dimulai dengan uang muka (DP) 50% melalui transfer bank atau QRIS resmi, dan pelunasan 50% dilakukan setelah pratinjau desain disetujui.'
   }
 ]
 
@@ -32,53 +32,83 @@ function toggle(idx: number) {
 </script>
 
 <template>
-  <section id="faq" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper">
-    <div class="max-w-4xl mx-auto">
-      <div v-reveal class="text-center mb-12">
-        <span class="brutal-tag bg-cyan text-ink mb-3">TANYA JAWAB // LAB 07</span>
-        <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-          Pertanyaan yang Sering Diajukan
-        </h2>
-        <p class="mt-3 text-sm sm:text-base text-ink/80 max-w-xl mx-auto">
-          Semua hal penting seputar alur pengerjaan, revisi, hingga kelengkapan file cetak di Arc Lab.
-        </p>
+  <section id="faq" class="py-20 sm:py-28 lg:py-32 bg-white">
+    <div class="swiss-container">
+      <!-- Numbered Swiss Section Header (Left-Aligned) -->
+      <div v-reveal class="mb-14 sm:mb-16">
+        <div class="swiss-section-rule mb-5"></div>
+        <div class="swiss-grid gap-y-6 items-end">
+          <div class="col-span-4 lg:col-span-2">
+            <span class="swiss-mono text-signal">07 / FAQ</span>
+          </div>
+          <div class="col-span-4 lg:col-span-6">
+            <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.03em] leading-[0.98] text-black text-left">
+              Pertanyaan umum.
+            </h2>
+          </div>
+          <div class="col-span-4 lg:col-span-4">
+            <p class="text-sm sm:text-base text-dark-gray leading-relaxed text-left">
+              Rincian teknis seputar alur pengerjaan, revisi, spesifikasi cetak, dan kelengkapan file master di Arc Lab.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div class="flex flex-col gap-4">
-        <div
-          v-for="(faq, idx) in faqs"
-          :key="idx"
-          v-reveal="idx * 50"
-          class="brutal-card bg-paper overflow-hidden"
-        >
-          <h3>
-            <button
-              :id="`faq-btn-${idx}`"
-              type="button"
-              class="w-full px-5 sm:px-6 py-5 text-left flex items-center justify-between gap-4 font-display font-bold text-base sm:text-lg hover:bg-yellow/35 transition-colors"
-              :aria-expanded="openIndex === idx ? 'true' : 'false'"
-              :aria-controls="`faq-panel-${idx}`"
-              @click="toggle(idx)"
-            >
-              <span>{{ faq.q }}</span>
-              <span
-                class="w-9 h-9 border-2 border-ink flex items-center justify-center font-mono text-lg font-bold shrink-0 transition-colors"
-                :class="openIndex === idx ? 'bg-coral text-paper' : 'bg-yellow text-ink'"
-                aria-hidden="true"
-              >
-                {{ openIndex === idx ? '−' : '+' }}
-              </span>
-            </button>
-          </h3>
-
+      <!-- 12-Col Grid: Accordion Rows Spanning Cols 3-12 -->
+      <div class="swiss-grid">
+        <div class="col-span-4 lg:col-start-3 lg:col-span-10 border-t border-black">
           <div
-            v-show="openIndex === idx"
-            :id="`faq-panel-${idx}`"
-            role="region"
-            :aria-labelledby="`faq-btn-${idx}`"
-            class="px-5 sm:px-6 pb-6 pt-3 border-t-2 border-ink bg-paper-dark/40 text-sm sm:text-base text-ink/85 leading-relaxed"
+            v-for="(faq, idx) in faqs"
+            :key="idx"
+            v-reveal="idx * 45"
+            class="border-b border-line"
           >
-            {{ faq.a }}
+            <h3>
+              <button
+                :id="`faq-btn-${idx}`"
+                type="button"
+                class="group w-full py-6 text-left flex items-start justify-between gap-6 transition-colors duration-300 ease-out"
+                :aria-expanded="openIndex === idx ? 'true' : 'false'"
+                :aria-controls="`faq-panel-${idx}`"
+                @click="toggle(idx)"
+              >
+                <div class="flex items-baseline gap-4 sm:gap-6">
+                  <span
+                    class="swiss-mono shrink-0 transition-colors duration-300"
+                    :class="openIndex === idx ? 'text-signal font-semibold' : 'text-mid-gray group-hover:text-black'"
+                  >
+                    {{ String(idx + 1).padStart(2, '0') }}
+                  </span>
+                  <span class="font-display text-lg sm:text-2xl font-medium tracking-[-0.02em] text-black group-hover:text-signal transition-colors duration-300 text-left">
+                    {{ faq.q }}
+                  </span>
+                </div>
+
+                <span
+                  class="font-mono text-xl leading-none shrink-0 pt-0.5 transition-colors duration-300"
+                  :class="openIndex === idx ? 'text-signal' : 'text-black group-hover:text-signal'"
+                  aria-hidden="true"
+                >
+                  {{ openIndex === idx ? '−' : '+' }}
+                </span>
+              </button>
+            </h3>
+
+            <!-- Smooth Height Transition via CSS Grid 0fr -> 1fr -->
+            <div
+              :id="`faq-panel-${idx}`"
+              role="region"
+              :aria-labelledby="`faq-btn-${idx}`"
+              :inert="openIndex !== idx || undefined"
+              class="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+              :class="openIndex === idx ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+            >
+              <div class="overflow-hidden">
+                <p class="pb-6 pl-8 sm:pl-11 pr-6 text-sm sm:text-base text-dark-gray leading-relaxed text-left max-w-3xl">
+                  {{ faq.a }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

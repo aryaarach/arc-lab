@@ -56,8 +56,8 @@ onMounted(() => {
   }
 
   const tick = () => {
-    currentX += (targetX - currentX) * 0.28
-    currentY += (targetY - currentY) * 0.28
+    currentX += (targetX - currentX) * 0.26
+    currentY += (targetY - currentY) * 0.26
     if (ringEl.value) {
       ringEl.value.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`
     }
@@ -87,22 +87,15 @@ onMounted(() => {
     v-if="enabled"
     ref="ringEl"
     aria-hidden="true"
-    class="fixed top-0 left-0 z-[9999] pointer-events-none transition-opacity duration-150"
+    class="fixed top-0 left-0 z-[9999] pointer-events-none mix-blend-difference transition-opacity duration-300 ease-out"
     :class="visible ? 'opacity-100' : 'opacity-0'"
   >
     <div
-      class="-translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink flex items-center justify-center transition-all duration-150 ease-out"
+      class="-translate-x-1/2 -translate-y-1/2 rounded-full border border-white transition-all duration-300 ease-out"
       :class="[
-        hoveredInteractive
-          ? 'w-14 h-14 bg-yellow/35 border-indigo scale-105'
-          : 'w-8 h-8 bg-transparent',
-        pressed ? 'scale-90 bg-coral/35' : ''
+        hoveredInteractive ? 'w-12 h-12' : 'w-7 h-7',
+        pressed ? 'scale-90' : 'scale-100'
       ]"
-    >
-      <span
-        class="rounded-full transition-all duration-150"
-        :class="hoveredInteractive ? 'w-2 h-2 bg-indigo' : 'w-1.5 h-1.5 bg-coral'"
-      ></span>
-    </div>
+    ></div>
   </div>
 </template>

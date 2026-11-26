@@ -8,7 +8,6 @@ import {
   BRAND_SWATCHES,
   BACKDROP_PRESETS,
   type ProductId,
-  type VibeType,
   type LabelLayout
 } from '~/composables/useBrandState'
 import { drawLabel } from '~/utils/labelCanvas'
@@ -43,20 +42,21 @@ const fallbackLabelDataUrl = ref('')
 const isHoveringMesh = ref(false)
 const snapshotFlash = ref(false)
 
-// Mini 2D preview canvases for the 4 Vibe cards
-const vibeCanvasMap = new Map<VibeType, HTMLCanvasElement>()
-function setVibeCanvasRef(v: VibeType, el: unknown) {
-  if (el instanceof HTMLCanvasElement) {
-    vibeCanvasMap.set(v, el)
-  } else {
-    vibeCanvasMap.delete(v)
-  }
-}
-
 const displayBrand = computed(() => (brandName.value.trim() || 'KOPI SENJA').slice(0, 18).toUpperCase())
-const selectedProductMeta = computed(
-  () => PRODUCT_CATALOG.find((p) => p.id === productId.value) || PRODUCT_CATALOG[0]
+
+const selectedProductIndex = computed(() => {
+  const idx = PRODUCT_CATALOG.findIndex((p) => p.id === productId.value)
+  return idx >= 0 ? idx : 0
+})
+
+const selectedProductIndexLabel = computed(() =>
+  `${String(selectedProductIndex.value + 1).padStart(2, '0')}/${String(PRODUCT_CATALOG.length).padStart(2, '0')}`
 )
+
+const selectedProductMeta = computed(
+  () => PRODUCT_CATALOG[selectedProductIndex.value] || PRODUCT_CATALOG[0]
+)
+
 const selectedColorMeta = computed(
   () =>
     BRAND_SWATCHES.find((c) => c.hex.toLowerCase() === colorHex.value.toLowerCase()) || {
@@ -64,6 +64,7 @@ const selectedColorMeta = computed(
       hex: colorHex.value
     }
 )
+
 const selectedBackdropMeta = computed(
   () => BACKDROP_PRESETS.find((b) => b.id === backdropId.value) || BACKDROP_PRESETS[0]
 )
@@ -88,25 +89,6 @@ const waDeepLink = computed(() => {
   ].join('\n')
   return `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(msg)}`
 })
-
-async function refreshMiniVibePreviews() {
-  if (typeof document === 'undefined') return
-  const b = displayBrand.value
-  const c = colorHex.value
-  await Promise.all(
-    VIBE_LIST.map(async (item) => {
-      const targetCanvas = vibeCanvasMap.get(item.id)
-      if (!targetCanvas) return
-      const rendered = await drawLabel(b, item.id, c, 'front', 0.22)
-      const ctx = targetCanvas.getContext('2d')
-      if (!ctx) return
-      targetCanvas.width = 140
-      targetCanvas.height = 96
-      // Crop center band of the label so brand & colors are crisp at thumbnail size
-      ctx.drawImage(rendered, 0, rendered.height * 0.16, rendered.width, rendered.height * 0.68, 0, 0, 140, 96)
-    })
-  )
-}
 
 async function refreshFallback2DImage() {
   if (!webglUnavailable.value || typeof document === 'undefined') return
@@ -139,20 +121,6 @@ async function handleDownloadPng() {
   await downloadPngFn?.()
 }
 
-// Inline SVG path helper for each of the 10 product picker cards
-const productSvgIcons: Record<ProductId, string> = {
-  pouch: 'M6 4h12l1 15c0 1-2.5 1.5-7 1.5S5 20 5 19L6 4zm1 3.5h10M9 11h6',
-  box: 'M5 6l7-3 7 3v12l-7 3-7-3V6zm0 0l7 3 7-3m-7 3v12',
-  can: 'M8 4h8l1 2v12l-1 2H8l-1-2V6l1-2zm-1 3h10M7 17h10',
-  cup: 'M6 7h12l-1.5 13h-9L6 7zm-1 0h14M8 7c1-3 7-3 8 0m-3-5l-1 5',
-  bottle: 'M10 3h4v3l2.5 3.5V19a1.5 1.5 0 01-1.5 1.5H9A1.5 1.5 0 017.5 19V9.5L10 6V3zm-2.5 9h9',
-  jar: 'M7 5h10v2.5H7V5zm1 2.5h8l1 2v9.5a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 017 19V9.5l1-2zm-1 4.5h10',
-  tote: 'M6 9h12l1 11H5L6 9zm3 0V6a3 3 0 016 0v3',
-  paperbag: 'M6 8h12l1 12H5L6 8zm3 0V6a3 3 0 016 0v2m-9 2.5h12',
-  card: 'M4 8h13v9H4V8zm3-2h13v9',
-  sticker: 'M5 5h14v11l-3 3H5V5zm11 14v-3h3M9.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm5 5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'
-}
-
 function easeOutBack(t: number): number {
   const c1 = 1.70158
   const c3 = c1 + 1
@@ -175,7 +143,6 @@ function isWebGLAvailable(): boolean {
 onMounted(async () => {
   if (typeof window === 'undefined') return
   await nextTick()
-  refreshMiniVibePreviews()
 
   if (!isWebGLAvailable()) {
     webglUnavailable.value = true
@@ -219,21 +186,19 @@ onMounted(async () => {
 
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  // Longer studio lens framing
   camera.position.set(0, 1.48, 4.55)
   const controls = new OrbitMod.OrbitControls(camera, canvas)
   controls.target.set(0, 0.72, 0)
   controls.enableDamping = true
   controls.dampingFactor = 0.065
   controls.autoRotate = !prefersReduced
-  controls.autoRotateSpeed = 1.35
+  controls.autoRotateSpeed = 1.15
   controls.enableZoom = false
   controls.enablePan = false
   controls.minPolarAngle = Math.PI * 0.18
-  controls.maxPolarAngle = Math.PI * 0.475 // Never goes under the studio floor
+  controls.maxPolarAngle = Math.PI * 0.475
   controls.update()
 
-  // Shared 4 layout textures so Brand Kit (all 10 products) & keystrokes are ultra-fast
   const sharedTextures = {} as Record<LabelLayout, import('three').CanvasTexture>
   const layouts: LabelLayout[] = ['front', 'wrap', 'card', 'sticker']
 
@@ -256,7 +221,6 @@ onMounted(async () => {
 
   await updateAllLabelTextures()
 
-  // ---- SINGLE PRODUCT STAGE STATE ----
   const singleStageGroup = new THREE.Group()
   scene.add(singleStageGroup)
 
@@ -322,7 +286,6 @@ onMounted(async () => {
     }
   }
 
-  // ---- BRAND KIT (ALL 10 PRODUCTS) STAGE STATE ----
   const brandKitGroup = new THREE.Group()
   brandKitGroup.visible = false
   scene.add(brandKitGroup)
@@ -339,15 +302,12 @@ onMounted(async () => {
 
   let kitEntries: KitEntry[] = []
 
-  // Two staggered studio rows of 5 products
   const kitPositions: [number, number, number][] = [
-    // Back row (taller containers)
     [-3.1, -0.78, 0.14],
     [-1.55, -0.86, 0.08],
     [0.0, -0.92, 0.0],
     [1.55, -0.86, -0.08],
     [3.1, -0.78, -0.14],
-    // Front row (staggered)
     [-2.45, 0.85, 0.18],
     [-1.22, 0.92, 0.09],
     [0.0, 0.96, 0.0],
@@ -366,7 +326,6 @@ onMounted(async () => {
 
   function buildBrandKitAll10() {
     clearBrandKit()
-    // Note: across all 10 products, ONLY bottle & jar use glass (2 glass meshes total <= max 2!)
     PRODUCT_CATALOG.forEach((meta, idx) => {
       const [px, pz, ry] = kitPositions[idx] || [0, 0, 0]
       const anchor = new THREE.Group()
@@ -399,18 +358,17 @@ onMounted(async () => {
     })
   }
 
-  // Smooth camera flight lerp state (0.6s eased lerp)
   const camFlight = {
     active: false,
     elapsed: 0,
-    duration: 0.6,
+    duration: 0.5,
     fromPos: new THREE.Vector3(),
     toPos: new THREE.Vector3(),
     fromTarget: new THREE.Vector3(),
     toTarget: new THREE.Vector3()
   }
 
-  function flyCameraTo(toPos: import('three').Vector3, toTarget: import('three').Vector3, duration = 0.6) {
+  function flyCameraTo(toPos: import('three').Vector3, toTarget: import('three').Vector3, duration = 0.5) {
     if (prefersReduced) {
       camera.position.copy(toPos)
       controls.target.copy(toTarget)
@@ -431,19 +389,17 @@ onMounted(async () => {
     if (!entry) return
     entry.bounceTime = 0
     const offsetPos = entry.focusTarget.clone().add(new THREE.Vector3(0.45, 0.95, 3.35))
-    flyCameraTo(offsetPos, entry.focusTarget, 0.6)
+    flyCameraTo(offsetPos, entry.focusTarget, 0.5)
   }
 
-  // Initial spawn
   spawnSingleProduct(productId.value, false)
 
-  // Reactive state watchers
   let brandTimer: ReturnType<typeof setTimeout> | null = null
   const stopBrandWatch = watch(brandName, () => {
     canvas.setAttribute('aria-label', canvasAriaLabel.value)
     if (brandTimer) clearTimeout(brandTimer)
     brandTimer = setTimeout(async () => {
-      await Promise.all([updateAllLabelTextures(), refreshMiniVibePreviews()])
+      await updateAllLabelTextures()
     }, 150)
   })
 
@@ -454,7 +410,7 @@ onMounted(async () => {
 
   const stopColorFinishWatch = watch([colorHex, finish], async () => {
     canvas.setAttribute('aria-label', canvasAriaLabel.value)
-    await Promise.all([updateAllLabelTextures(), refreshMiniVibePreviews()])
+    await updateAllLabelTextures()
     if (viewportMode.value === 'single') {
       spawnSingleProduct(productId.value, false)
     } else {
@@ -483,14 +439,14 @@ onMounted(async () => {
       buildBrandKitAll10()
       brandKitGroup.visible = true
       controls.autoRotate = false
-      flyCameraTo(new THREE.Vector3(0, 3.15, 9.2), new THREE.Vector3(0, 0.55, 0.1), 0.6)
+      flyCameraTo(new THREE.Vector3(0, 3.15, 9.2), new THREE.Vector3(0, 0.55, 0.1), 0.5)
     } else {
       brandKitGroup.visible = false
       clearBrandKit()
       singleStageGroup.visible = true
       spawnSingleProduct(productId.value, false)
       controls.autoRotate = !prefersReduced
-      flyCameraTo(new THREE.Vector3(0, 1.48, 4.55), new THREE.Vector3(0, 0.72, 0), 0.55)
+      flyCameraTo(new THREE.Vector3(0, 1.48, 4.55), new THREE.Vector3(0, 0.72, 0), 0.45)
     }
   })
 
@@ -509,7 +465,6 @@ onMounted(async () => {
     await captureStagePng(renderer, scene, camera, `arc-lab-${slug}-${modeSlug}.png`)
   }
 
-  // Raycast hover cursor + click bounce / Brand Kit selection & camera fly
   const raycaster = new THREE.Raycaster()
   const pointerNDC = new THREE.Vector2()
   let downPos = { x: 0, y: 0 }
@@ -562,7 +517,6 @@ onMounted(async () => {
   canvas.addEventListener('pointermove', onPointerMove, { passive: true })
   canvas.addEventListener('pointerup', onPointerUp)
 
-  // Render loop + IntersectionObserver + ResizeObserver
   let rafId = 0
   let running = false
   let inView = true
@@ -573,7 +527,6 @@ onMounted(async () => {
     const dt = Math.min((now - prevNow) / 1000, 0.05)
     prevNow = now
 
-    // Camera flight interpolation (0.6s eased lerp)
     if (camFlight.active) {
       camFlight.elapsed += dt
       const t = Math.min(1, camFlight.elapsed / camFlight.duration)
@@ -583,7 +536,6 @@ onMounted(async () => {
       if (t >= 1) camFlight.active = false
     }
 
-    // Single product swap transition (0.35s ease-out-back) & subtle 0.08 bounce
     if (activeSingle) {
       let baseS = 1
       if (activeSingle.phase === 'in') {
@@ -599,14 +551,13 @@ onMounted(async () => {
       let by = 0
       if (bounceTimer >= 0) {
         bounceTimer += dt
-        const dur = 0.45
+        const dur = 0.42
         if (bounceTimer >= dur) {
           bounceTimer = -1
         } else {
           const p = bounceTimer / dur
           const decay = Math.exp(-4.5 * p)
           const wave = Math.sin(p * Math.PI * 3.0)
-          // Subtle realistic studio bounce (0.08 amplitude)
           sy *= 1 + wave * decay * 0.08
           sx *= 1 - wave * decay * 0.045
           sz *= 1 - wave * decay * 0.045
@@ -618,7 +569,6 @@ onMounted(async () => {
       activeSingle.holder.position.y = by
     }
 
-    // Outgoing product scale down + fade out + full dispose after 0.25s
     for (let i = outgoingSingles.length - 1; i >= 0; i--) {
       const out = outgoingSingles[i]
       out.timer += dt
@@ -633,12 +583,11 @@ onMounted(async () => {
       }
     }
 
-    // Brand Kit item bounces
     if (viewportMode.value === 'kit') {
       for (const entry of kitEntries) {
         if (entry.bounceTime >= 0) {
           entry.bounceTime += dt
-          const dur = 0.45
+          const dur = 0.42
           if (entry.bounceTime >= dur) {
             entry.bounceTime = -1
             entry.holder.scale.set(1, 1, 1)
@@ -740,11 +689,9 @@ onMounted(async () => {
   }
 })
 
-// Keep 2D fallback reactive if WebGL is unavailable
 watch([brandName, vibe, colorHex, productId], () => {
   if (webglUnavailable.value) {
     refreshFallback2DImage()
-    refreshMiniVibePreviews()
   }
 })
 
@@ -757,32 +704,39 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section id="mixer" class="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 border-b-2 border-ink bg-paper-dark/60">
-    <div class="max-w-7xl mx-auto">
-      <!-- Header -->
-      <div v-reveal class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
-        <div>
-          <span class="brutal-tag bg-indigo text-paper mb-3">STUDIO FOTO KEMASAN // LAB 02</span>
-          <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-            Konfigurator Produk &amp; Brand Kit 3D
-          </h2>
+  <section id="mixer" class="py-20 sm:py-28 lg:py-32 bg-off-white border-y border-line">
+    <div class="swiss-container">
+      <!-- Numbered Swiss Section Header -->
+      <div v-reveal class="mb-14 sm:mb-16">
+        <div class="swiss-section-rule mb-5"></div>
+        <div class="swiss-grid gap-y-6 items-end">
+          <div class="col-span-4 lg:col-span-2">
+            <span class="swiss-mono text-signal">02 / MIXER</span>
+          </div>
+          <div class="col-span-4 lg:col-span-6">
+            <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.03em] leading-[0.98] text-black text-left">
+              Konfigurator Kemasan &amp; Brand Kit 3D.
+            </h2>
+          </div>
+          <div class="col-span-4 lg:col-span-4">
+            <p class="text-sm sm:text-base text-dark-gray leading-relaxed text-left">
+              Uji 10 jenis kemasan realistis, atur tipografi label, material, dan warna siklorama studio, lalu unduh foto PNG resolusi 2x atau pesan via WhatsApp.
+            </p>
+          </div>
         </div>
-        <p class="max-w-md text-sm sm:text-base text-ink/80">
-          Uji 10 jenis kemasan produk realistis, pilih tekstur bahan dan warna siklorama studio, lalu unduh foto PNG 2x atau kirim spesifikasinya ke WhatsApp.
-        </p>
       </div>
 
-      <!-- Left Controls (5 cols) + Right Photoreal Studio Viewport (7 cols) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <!-- LEFT CONTROLS (5 cols) -->
-        <div v-reveal="80" class="lg:col-span-5 brutal-card p-5 sm:p-6 flex flex-col gap-5">
-          <!-- 1. Brand Name -->
-          <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <label for="mixer-brand-name" class="font-mono text-xs font-bold uppercase tracking-wider">
-                1. Nama Brand
+      <!-- 12-Col Grid: Left 4-Col Numbered Control List + Right 8-Col 1px Viewport -->
+      <div class="swiss-grid gap-y-10 items-start">
+        <!-- LEFT 4-COL CONTROL COLUMN: Plain Numbered List Separated by 1px Rules -->
+        <div v-reveal="60" class="col-span-4 lg:col-span-4 border-t border-black">
+          <!-- 01 Nama -->
+          <div class="py-5 border-b border-line">
+            <div class="flex items-center justify-between mb-2">
+              <label for="mixer-brand-name" class="swiss-mono text-black">
+                01 / NAMA
               </label>
-              <span class="font-mono text-xs text-ink/70">{{ brandName.length }}/18</span>
+              <span class="swiss-mono text-dark-gray">{{ brandName.length }}/18</span>
             </div>
             <input
               id="mixer-brand-name"
@@ -790,193 +744,181 @@ onBeforeUnmount(() => {
               type="text"
               maxlength="18"
               placeholder="KOPI SENJA"
-              class="w-full px-3.5 py-2.5 bg-white border-2 border-ink font-display font-bold text-base shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-indigo"
+              class="w-full px-0 py-2 bg-transparent border-0 border-b border-black rounded-none font-display text-xl sm:text-2xl font-medium tracking-[-0.025em] text-black placeholder:text-mid-gray focus:border-signal focus:outline-none transition-colors duration-300"
               @input="onBrandInputChange"
             />
           </div>
 
-          <!-- 2. Product Picker (10 Cards with Inline SVG Icons) -->
-          <fieldset>
-            <legend class="font-mono text-xs font-bold uppercase tracking-wider mb-2">
-              2. Pilih Kemasan (10 Produk): <span class="text-indigo">{{ selectedProductMeta.name }}</span>
+          <!-- 02 Produk: 2-Col List of Names with Tiny Index Numbers (No Icons or Cards) -->
+          <fieldset class="py-5 border-b border-line">
+            <legend class="swiss-mono text-black mb-3 w-full flex items-center justify-between">
+              <span>02 / PRODUK</span>
+              <span class="text-dark-gray">{{ selectedProductMeta.name }}</span>
             </legend>
-            <div class="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-2 xl:grid-cols-5 gap-2">
+            <div class="grid grid-cols-2 gap-x-5">
               <button
-                v-for="prod in PRODUCT_CATALOG"
+                v-for="(prod, idx) in PRODUCT_CATALOG"
                 :key="prod.id"
                 type="button"
                 :aria-pressed="productId === prod.id ? 'true' : 'false'"
-                class="p-2 border-2 border-ink flex flex-col items-center justify-center gap-1 text-center transition-all"
+                class="py-2 border-b flex items-baseline gap-2 text-left transition-colors duration-300 ease-out"
                 :class="
                   productId === prod.id
-                    ? 'bg-yellow shadow-brutal-sm -translate-y-0.5'
-                    : 'bg-paper hover:bg-paper-dark'
+                    ? 'border-b-2 border-signal text-black font-medium'
+                    : 'border-line text-dark-gray hover:text-black'
                 "
                 @click="productId = prod.id"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <span
+                  class="swiss-mono shrink-0"
+                  :class="productId === prod.id ? 'text-signal' : 'text-mid-gray'"
                 >
-                  <path :d="productSvgIcons[prod.id]" />
-                </svg>
-                <span class="font-mono text-[10px] font-bold leading-tight">{{ prod.shortName }}</span>
+                  {{ String(idx + 1).padStart(2, '0') }}
+                </span>
+                <span class="text-xs sm:text-sm tracking-[-0.01em] truncate">{{ prod.name }}</span>
               </button>
             </div>
           </fieldset>
 
-          <!-- 3. Vibe (4 Cards with Tiny Live Label Preview on Mini Canvas) -->
-          <fieldset>
-            <legend class="font-mono text-xs font-bold uppercase tracking-wider mb-2">
-              3. Gaya Label: <span class="text-indigo">{{ vibe }}</span>
+          <!-- 03 Gaya: Text-Only Segmented Control with Red Active Underline -->
+          <fieldset class="py-5 border-b border-line">
+            <legend class="swiss-mono text-black mb-3 w-full flex items-center justify-between">
+              <span>03 / GAYA</span>
+              <span class="text-dark-gray">{{ vibe }}</span>
             </legend>
-            <div class="grid grid-cols-2 gap-2.5">
+            <div class="grid grid-cols-4 border-b border-line">
               <button
                 v-for="v in VIBE_LIST"
                 :key="v.id"
                 type="button"
                 :aria-pressed="vibe === v.id ? 'true' : 'false'"
-                class="p-2 border-2 border-ink text-left transition-all flex flex-col gap-1.5"
+                class="py-2 -mb-px text-left text-xs sm:text-sm tracking-[-0.01em] border-b-2 transition-colors duration-300 ease-out"
                 :class="
                   vibe === v.id
-                    ? 'bg-cyan shadow-brutal-sm -translate-y-0.5'
-                    : 'bg-paper hover:bg-paper-dark'
+                    ? 'border-signal text-black font-medium'
+                    : 'border-transparent text-dark-gray hover:text-black'
                 "
                 @click="vibe = v.id"
               >
-                <canvas
-                  :ref="(el) => setVibeCanvasRef(v.id, el)"
-                  width="140"
-                  height="96"
-                  class="w-full h-12 border border-ink/40 bg-white object-cover"
-                  aria-hidden="true"
-                ></canvas>
-                <div class="flex items-center justify-between w-full">
-                  <span class="font-display font-bold text-xs">{{ v.id }}</span>
-                  <span class="font-mono text-[10px] text-ink/70">{{ v.desc.split(',')[0] }}</span>
-                </div>
+                {{ v.id }}
               </button>
             </div>
           </fieldset>
 
-          <!-- 4. Color Swatches (6) & 5. Finish Segmented Control -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <fieldset>
-              <legend class="font-mono text-xs font-bold uppercase tracking-wider mb-2">
-                4. Warna Brand
-              </legend>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="sw in BRAND_SWATCHES"
-                  :key="sw.hex"
-                  type="button"
-                  :aria-label="`Pilih warna brand ${sw.name}`"
-                  :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
-                  class="w-8 h-8 border-2 border-ink flex items-center justify-center transition-transform"
-                  :class="
-                    colorHex.toLowerCase() === sw.hex.toLowerCase()
-                      ? 'scale-110 ring-2 ring-indigo ring-offset-1 ring-offset-paper shadow-brutal-sm'
-                      : 'hover:scale-105'
-                  "
-                  :style="{ backgroundColor: sw.hex }"
-                  @click="colorHex = sw.hex"
-                >
-                  <span
-                    v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
-                    class="font-mono text-[10px] font-bold"
-                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-ink' : 'text-paper'"
-                    aria-hidden="true"
-                  >✓</span>
-                </button>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend class="font-mono text-xs font-bold uppercase tracking-wider mb-2">
-                5. Finish Material
-              </legend>
-              <div class="grid grid-cols-3 border-2 border-ink bg-paper shadow-brutal-sm">
-                <button
-                  v-for="f in FINISH_LIST"
-                  :key="f.id"
-                  type="button"
-                  :aria-pressed="finish === f.id ? 'true' : 'false'"
-                  class="py-2 px-1 font-mono text-[11px] font-bold border-r-2 last:border-r-0 border-ink transition-colors"
-                  :class="finish === f.id ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-yellow'"
-                  @click="finish = f.id"
-                >
-                  {{ f.label }}
-                </button>
-              </div>
-            </fieldset>
-          </div>
-
-          <!-- 6. Cyclorama Backdrop Presets (6 Swatches) -->
-          <fieldset>
-            <legend class="font-mono text-xs font-bold uppercase tracking-wider mb-2">
-              6. Latar Siklorama Studio: <span class="text-indigo">{{ selectedBackdropMeta.name }}</span>
+          <!-- 04 Warna: Plain Circle Swatches -->
+          <fieldset class="py-5 border-b border-line">
+            <legend class="swiss-mono text-black mb-3 w-full flex items-center justify-between">
+              <span>04 / WARNA</span>
+              <span class="text-dark-gray">{{ selectedColorMeta.name }}</span>
             </legend>
-            <div class="grid grid-cols-6 gap-2">
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                v-for="sw in BRAND_SWATCHES"
+                :key="sw.hex"
+                type="button"
+                :aria-label="`Pilih warna brand ${sw.name}`"
+                :aria-pressed="colorHex.toLowerCase() === sw.hex.toLowerCase() ? 'true' : 'false'"
+                class="w-7 h-7 rounded-full border border-black/15 transition-transform duration-300 ease-out"
+                :class="
+                  colorHex.toLowerCase() === sw.hex.toLowerCase()
+                    ? 'ring-2 ring-signal ring-offset-2 ring-offset-off-white scale-110'
+                    : 'hover:scale-110'
+                "
+                :style="{ backgroundColor: sw.hex }"
+                @click="colorHex = sw.hex"
+              ></button>
+            </div>
+          </fieldset>
+
+          <!-- 05 Finishing: Text-Only Segmented Control with Red Active Underline -->
+          <fieldset class="py-5 border-b border-line">
+            <legend class="swiss-mono text-black mb-3 w-full flex items-center justify-between">
+              <span>05 / FINISHING</span>
+              <span class="text-dark-gray">{{ finish }}</span>
+            </legend>
+            <div class="grid grid-cols-3 border-b border-line">
+              <button
+                v-for="f in FINISH_LIST"
+                :key="f.id"
+                type="button"
+                :aria-pressed="finish === f.id ? 'true' : 'false'"
+                class="py-2 -mb-px text-left text-xs sm:text-sm tracking-[-0.01em] border-b-2 transition-colors duration-300 ease-out"
+                :class="
+                  finish === f.id
+                    ? 'border-signal text-black font-medium'
+                    : 'border-transparent text-dark-gray hover:text-black'
+                "
+                @click="finish = f.id"
+              >
+                {{ f.label }}
+              </button>
+            </div>
+          </fieldset>
+
+          <!-- 06 Latar: Plain Circle Cyclorama Swatches -->
+          <fieldset class="py-5 border-b border-line">
+            <legend class="swiss-mono text-black mb-3 w-full flex items-center justify-between">
+              <span>06 / LATAR</span>
+              <span class="text-dark-gray">{{ selectedBackdropMeta.name }}</span>
+            </legend>
+            <div class="flex flex-wrap items-center gap-3">
               <button
                 v-for="bg in BACKDROP_PRESETS"
                 :key="bg.id"
                 type="button"
                 :aria-label="`Latar studio ${bg.name}`"
                 :aria-pressed="backdropId === bg.id ? 'true' : 'false'"
-                class="h-9 border-2 border-ink flex items-center justify-center transition-transform"
+                class="w-7 h-7 rounded-full border border-black/15 transition-transform duration-300 ease-out"
                 :class="
                   backdropId === bg.id
-                    ? 'scale-105 ring-2 ring-indigo ring-offset-1 ring-offset-paper shadow-brutal-sm'
-                    : 'hover:scale-105'
+                    ? 'ring-2 ring-signal ring-offset-2 ring-offset-off-white scale-110'
+                    : 'hover:scale-110'
                 "
                 :style="{ backgroundColor: bg.hex }"
                 @click="backdropId = bg.id"
-              >
-                <span
-                  v-if="backdropId === bg.id"
-                  class="font-mono text-xs font-bold"
-                  :class="bg.isDark ? 'text-paper' : 'text-ink'"
-                  aria-hidden="true"
-                >✓</span>
-              </button>
+              ></button>
             </div>
           </fieldset>
 
           <!-- WhatsApp Deep-Link CTA -->
-          <div class="pt-3 border-t-2 border-ink">
+          <div class="pt-6">
             <a
               :href="waDeepLink"
               target="_blank"
               rel="noopener noreferrer"
-              class="w-full brutal-btn bg-coral text-ink px-5 py-3.5 text-sm sm:text-base text-center"
+              class="group w-full swiss-btn-primary px-6 py-4 text-sm sm:text-base"
             >
               <span>Pesan Desain Ini via WhatsApp</span>
-              <span aria-hidden="true">→</span>
+              <span class="swiss-arrow" aria-hidden="true">↗</span>
             </a>
           </div>
         </div>
 
-        <!-- RIGHT VIEWPORT (7 cols) -->
-        <div v-reveal="140" class="lg:col-span-7 brutal-card overflow-hidden flex flex-col">
-          <!-- Ink Top Bar: Product Name + Vibe + Mode Toggle ("Satu Produk" / "Brand Kit") -->
-          <div class="px-4 py-2.5 bg-ink text-paper flex flex-wrap items-center justify-between gap-3">
-            <div class="font-mono text-xs uppercase tracking-wider flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-cyan" aria-hidden="true"></span>
-              <span>{{ selectedProductMeta.name }} · {{ vibe }} · {{ finish }}</span>
+        <!-- RIGHT 8-COL VIEWPORT: Sharp 1px Border + Mono Caption Bar -->
+        <div
+          v-reveal="120"
+          class="col-span-4 lg:col-span-8 border border-black bg-white rounded-none flex flex-col"
+        >
+          <!-- Top Mono Caption Bar + Text Segmented Mode Toggle -->
+          <div class="px-4 sm:px-5 border-b border-line bg-white flex flex-wrap items-center justify-between gap-3">
+            <div class="py-3 swiss-mono text-black flex flex-wrap items-center gap-2.5">
+              <span class="text-signal font-semibold">{{ selectedProductIndexLabel }}</span>
+              <span class="text-line" aria-hidden="true">/</span>
+              <span>{{ selectedProductMeta.name }}</span>
+              <span class="text-line" aria-hidden="true">/</span>
+              <span class="text-dark-gray">{{ vibe }} · {{ finish }}</span>
             </div>
 
-            <div class="inline-flex border-2 border-paper bg-ink" role="group" aria-label="Mode tampilan studio">
+            <div class="flex items-center gap-5" role="group" aria-label="Mode tampilan studio">
               <button
                 type="button"
                 :aria-pressed="viewportMode === 'single' ? 'true' : 'false'"
-                class="px-3 py-1 font-mono text-xs font-bold transition-colors"
-                :class="viewportMode === 'single' ? 'bg-yellow text-ink' : 'text-paper hover:bg-paper/15'"
+                class="py-3 -mb-px swiss-mono border-b-2 transition-colors duration-300 ease-out"
+                :class="
+                  viewportMode === 'single'
+                    ? 'border-signal text-black font-semibold'
+                    : 'border-transparent text-dark-gray hover:text-black'
+                "
                 @click="viewportMode = 'single'"
               >
                 Satu Produk
@@ -984,8 +926,12 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 :aria-pressed="viewportMode === 'kit' ? 'true' : 'false'"
-                class="px-3 py-1 font-mono text-xs font-bold border-l-2 border-paper transition-colors"
-                :class="viewportMode === 'kit' ? 'bg-cyan text-ink' : 'text-paper hover:bg-paper/15'"
+                class="py-3 -mb-px swiss-mono border-b-2 transition-colors duration-300 ease-out"
+                :class="
+                  viewportMode === 'kit'
+                    ? 'border-signal text-black font-semibold'
+                    : 'border-transparent text-dark-gray hover:text-black'
+                "
                 @click="viewportMode = 'kit'"
               >
                 Brand Kit (10)
@@ -993,24 +939,22 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- Photoreal Studio Viewport Stage (Reserved Height to Avoid CLS) -->
-          <div class="relative w-full h-[420px] sm:h-[520px] lg:h-[580px] bg-[#EAE5DC] overflow-hidden select-none">
+          <!-- Photoreal Studio Viewport Stage (Reserved Height for Zero CLS) -->
+          <div class="relative w-full h-[420px] sm:h-[540px] lg:h-[620px] bg-off-white overflow-hidden select-none">
             <!-- Fallback 2D Label View when WebGL is Unavailable -->
             <div
               v-if="webglUnavailable"
-              class="w-full h-full flex flex-col items-center justify-center p-6 gap-4 text-center"
+              class="w-full h-full flex flex-col items-center justify-center p-6 gap-4"
               :style="{ backgroundColor: selectedBackdropMeta.hex }"
             >
               <img
                 v-if="fallbackLabelDataUrl"
                 :src="fallbackLabelDataUrl"
                 :alt="`Desain label 2D untuk merek ${displayBrand}`"
-                class="max-h-72 w-auto border-2 border-ink shadow-brutal bg-white object-contain"
+                class="max-h-72 w-auto border border-black bg-white object-contain"
               />
-              <p
-                class="px-4 py-2 bg-paper border-2 border-ink font-mono text-xs font-semibold max-w-md shadow-brutal-sm text-ink"
-              >
-                Perangkat ini tidak mendukung WebGL 3D. Menampilkan pratinjau label cetak 2D langsung — seluruh pengaturan tetap berfungsi penuh.
+              <p class="px-4 py-2.5 bg-white border border-black swiss-mono text-black max-w-md text-left leading-relaxed">
+                WEBGL TIDAK TERSEDIA — MENAMPILKAN PRATINJAU LABEL CETAK 2D LANGSUNG.
               </p>
             </div>
 
@@ -1023,28 +967,22 @@ onBeforeUnmount(() => {
               :class="isHoveringMesh ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'"
             ></div>
 
-            <!-- Subtle Studio Vignette Overlay (CSS Only) -->
-            <div
-              aria-hidden="true"
-              class="pointer-events-none absolute inset-0 shadow-[inset_0_0_85px_rgba(11,11,15,0.15)]"
-            ></div>
-
             <!-- Snapshot Flash -->
             <div
               aria-hidden="true"
-              class="pointer-events-none absolute inset-0 bg-white z-20 transition-opacity duration-300"
+              class="pointer-events-none absolute inset-0 bg-white z-20 transition-opacity duration-300 ease-out"
               :class="snapshotFlash ? 'opacity-85' : 'opacity-0'"
             ></div>
           </div>
 
-          <!-- Neo-Brutalist Bottom Action Bar -->
-          <div class="p-3.5 sm:px-5 border-t-2 border-ink bg-paper flex flex-wrap items-center justify-between gap-3">
-            <span class="font-mono text-xs text-ink/80">
+          <!-- Bottom Mono Action Bar -->
+          <div class="px-4 sm:px-5 py-3 border-t border-line bg-white flex flex-wrap items-center justify-between gap-3">
+            <span class="swiss-mono text-dark-gray">
               <template v-if="viewportMode === 'kit'">
-                Klik produk mana saja di lantai studio untuk mendekatkan kamera
+                KLIK PRODUK DI LANTAI STUDIO UNTUK FOKUS KAMERA
               </template>
               <template v-else>
-                Geser untuk memutar produk · Zoom dikunci agar nyaman di-scroll
+                GESER UNTUK MEMUTAR · ZOOM DIKUNCI AGAR NYAMAN DI-SCROLL
               </template>
             </span>
 
@@ -1052,25 +990,26 @@ onBeforeUnmount(() => {
               <button
                 v-if="!webglUnavailable"
                 type="button"
-                class="px-3 py-1.5 bg-paper hover:bg-yellow border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                class="px-3.5 py-2 rounded-none border border-black bg-white text-black swiss-mono hover:bg-black hover:text-white transition-colors duration-300 ease-out"
                 @click="handleBounceClick"
               >
-                Pantulkan!
+                Pantulkan
               </button>
               <button
                 type="button"
-                class="px-3 py-1.5 bg-cyan hover:bg-yellow border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                class="px-3.5 py-2 rounded-none border border-black bg-white text-black swiss-mono hover:bg-black hover:text-white transition-colors duration-300 ease-out"
                 @click="handleRandomizeClick"
               >
-                🎲 Acak!
+                Acak!
               </button>
               <button
                 v-if="!webglUnavailable"
                 type="button"
-                class="px-3.5 py-1.5 bg-yellow hover:bg-coral border-2 border-ink font-mono text-xs font-bold shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                class="group px-4 py-2 rounded-none border border-black bg-black text-white swiss-mono hover:bg-signal hover:border-signal transition-colors duration-300 ease-out inline-flex items-center gap-1.5"
                 @click="handleDownloadPng"
               >
-                ⬇ Unduh PNG
+                <span>Unduh PNG</span>
+                <span class="swiss-arrow" aria-hidden="true">↗</span>
               </button>
             </div>
           </div>
