@@ -49,9 +49,9 @@ export const PRODUCT_CATALOG: ProductMeta[] = [
 ]
 
 export const VIBE_LIST: { id: VibeType; desc: string }[] = [
-  { id: 'Minimalis', desc: 'Bersih, editorial, modern' },
-  { id: 'Playful', desc: 'Segar, ekspresif, kontras' },
-  { id: 'Premium', desc: 'Gelap elegan, aksen emas' },
+  { id: 'Minimalis', desc: 'Senja espresso, serif elegan' },
+  { id: 'Playful', desc: 'Tropis cerah, botani segar' },
+  { id: 'Premium', desc: 'Obsidian matte, foil emas' },
   { id: 'Retro', desc: 'Klasik hangat Nusantara' }
 ]
 

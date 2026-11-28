@@ -859,7 +859,10 @@ onBeforeUnmount(() => {
                 ></canvas>
                 <div class="flex items-center justify-between w-full">
                   <span class="font-display font-bold text-xs">{{ v.id }}</span>
-                  <span class="font-mono text-[10px] text-ink/70">{{ v.desc.split(',')[0] }}</span>
+                  <span
+                    class="font-mono text-[10px]"
+                    :class="vibe === v.id ? 'text-[#0B0B0F]/75' : 'text-ink/70'"
+                  >{{ v.desc.split(',')[0] }}</span>
                 </div>
               </button>
             </div>
@@ -890,7 +893,7 @@ onBeforeUnmount(() => {
                   <span
                     v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
                     class="font-mono text-[10px] font-bold"
-                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-ink' : 'text-paper'"
+                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-[#0B0B0F]' : 'text-[#F4F1EA]'"
                     aria-hidden="true"
                   >✓</span>
                 </button>
@@ -941,7 +944,7 @@ onBeforeUnmount(() => {
                 <span
                   v-if="backdropId === bg.id"
                   class="font-mono text-xs font-bold"
-                  :class="bg.isDark ? 'text-paper' : 'text-ink'"
+                  :class="bg.isDark ? 'text-[#F4F1EA]' : 'text-[#0B0B0F]'"
                   aria-hidden="true"
                 >✓</span>
               </button>

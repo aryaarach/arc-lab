@@ -84,7 +84,7 @@ export function createCanvasLabelTexture(
 ): import('three').CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
-  tex.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 4)
+  tex.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 16)
   tex.generateMipmaps = true
   tex.minFilter = THREE.LinearMipmapLinearFilter
   tex.magFilter = THREE.LinearFilter
@@ -157,7 +157,7 @@ export function setupStudioStage(
   renderer.setPixelRatio(quality.pixelRatio)
   renderer.setSize(w, h)
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.0
+  renderer.toneMappingExposure = 1.08
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -172,43 +172,45 @@ export function setupStudioStage(
   scene.background = bgCol
   scene.fog = new THREE.Fog(bgCol, 14, 28)
 
-  // PMREM RoomEnvironment for realistic specular reflections on glass, metal, and clearcoat
+  // PMREM RoomEnvironment for realistic specular reflections on glass, metal, matte foil, and clearcoat
   const pmrem = new THREE.PMREMGenerator(renderer)
   pmrem.compileEquirectangularShader()
   const envRoom = new RoomEnvironmentClass()
-  const envRT = pmrem.fromScene(envRoom, 0.04)
+  const envRT = pmrem.fromScene(envRoom, 0.035)
   scene.environment = envRT.texture
-  scene.environmentIntensity = 0.95
+  scene.environmentIntensity = 1.15
   pmrem.dispose()
   disposeObjectTree(envRoom)
 
   // Longer studio lens PerspectiveCamera (fov 28-32)
   const camera = new THREE.PerspectiveCamera(fov, w / h, 0.1, 60)
 
-  // Three-point studio lighting
-  const keyLight = new THREE.DirectionalLight(0xfffbf4, 2.05)
-  keyLight.position.set(4.2, 6.8, 5.0)
+  // Commercial 4-point softbox studio lighting rig
+  const hemiLight = new THREE.HemisphereLight(0xfffaf2, 0xd4c8b8, 0.55)
+
+  const keyLight = new THREE.DirectionalLight(0xfff8ee, 2.25)
+  keyLight.position.set(3.8, 6.4, 5.2)
   keyLight.castShadow = true
   keyLight.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize)
-  keyLight.shadow.radius = 4
-  keyLight.shadow.bias = -0.0004
-  keyLight.shadow.normalBias = 0.02
+  keyLight.shadow.radius = 5.5
+  keyLight.shadow.bias = -0.0003
+  keyLight.shadow.normalBias = 0.018
   keyLight.shadow.camera.near = 0.5
-  keyLight.shadow.camera.far = 22
-  keyLight.shadow.camera.left = -6.5
-  keyLight.shadow.camera.right = 6.5
-  keyLight.shadow.camera.top = 5.5
-  keyLight.shadow.camera.bottom = -4.5
+  keyLight.shadow.camera.far = 20
+  keyLight.shadow.camera.left = -4.6
+  keyLight.shadow.camera.right = 4.6
+  keyLight.shadow.camera.top = 4.6
+  keyLight.shadow.camera.bottom = -3.6
 
-  const fillLight = new THREE.DirectionalLight(0xf5f7ff, 0.42)
-  fillLight.position.set(-5.0, 3.2, 4.0)
+  const fillLight = new THREE.DirectionalLight(0xf3f6ff, 0.68)
+  fillLight.position.set(-5.2, 3.4, 4.4)
   fillLight.castShadow = false
 
-  const rimLight = new THREE.DirectionalLight(0xd6e9ff, 0.82)
-  rimLight.position.set(-2.4, 4.6, -5.2)
+  const rimLight = new THREE.DirectionalLight(0xffe9cf, 1.15)
+  rimLight.position.set(-2.6, 5.0, -5.0)
   rimLight.castShadow = false
 
-  scene.add(keyLight, fillLight, rimLight)
+  scene.add(hemiLight, keyLight, fillLight, rimLight)
 
   // Seamless Cyclorama Sweep
   const { mesh: cycloramaMesh, material: cycloramaMat } = buildCycloramaMesh(THREE, initialBackdropHex, 32)

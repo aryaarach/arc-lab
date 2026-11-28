@@ -22,6 +22,36 @@ export type MockupBuilderFn = (
 
 let cachedKraftBump: import('three').CanvasTexture | null = null
 let cachedFabricNormal: import('three').CanvasTexture | null = null
+let cachedMatteFoilBump: import('three').CanvasTexture | null = null
+
+function getMatteFoilBumpMap(THREE: ThreeLib): import('three').CanvasTexture {
+  if (cachedMatteFoilBump) return cachedMatteFoilBump
+  const c = document.createElement('canvas')
+  c.width = 256
+  c.height = 256
+  const ctx = c.getContext('2d')
+  if (ctx) {
+    const img = ctx.createImageData(256, 256)
+    const d = img.data
+    let s = 314159
+    for (let i = 0; i < d.length; i += 4) {
+      s = (s * 16807) % 2147483647
+      const v = 116 + (s % 24)
+      d[i] = v
+      d[i + 1] = v
+      d[i + 2] = v
+      d[i + 3] = 255
+    }
+    ctx.putImageData(img, 0, 0)
+  }
+  const tex = new THREE.CanvasTexture(c)
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(6, 6)
+  tex.userData.sharedResource = true
+  cachedMatteFoilBump = tex
+  return tex
+}
 
 function getKraftBumpMap(THREE: ThreeLib): import('three').CanvasTexture {
   if (cachedKraftBump) return cachedKraftBump
@@ -118,11 +148,11 @@ function createPhysicalFinishMaterial(
     return new THREE.MeshPhysicalMaterial({
       color: labelTex ? 0xffffff : new THREE.Color(baseColorHex),
       map: labelTex || null,
-      roughness: 0.12,
-      metalness: 0.0,
+      roughness: 0.09,
+      metalness: 0.04,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.08,
-      envMapIntensity: 1.05
+      clearcoatRoughness: 0.06,
+      envMapIntensity: 1.25
     })
   }
   if (finish === 'Kraft') {
@@ -130,25 +160,29 @@ function createPhysicalFinishMaterial(
     return new THREE.MeshPhysicalMaterial({
       color: labelTex ? new THREE.Color('#E3C89E') : new THREE.Color('#C9A878'),
       map: labelTex || null,
-      roughness: 0.9,
+      roughness: 0.88,
       metalness: 0.0,
       clearcoat: 0.0,
       bumpMap: bump,
-      bumpScale: 0.014,
-      envMapIntensity: 0.65
+      bumpScale: 0.015,
+      envMapIntensity: 0.72
     })
   }
-  // Matte
+  // Soft-touch Matte laminated finish with subtle micro-grain
+  const matteBump = getMatteFoilBumpMap(THREE)
   return new THREE.MeshPhysicalMaterial({
     color: labelTex ? 0xffffff : new THREE.Color(baseColorHex),
     map: labelTex || null,
-    roughness: 0.7,
-    metalness: 0.0,
-    clearcoat: 0.0,
-    sheen: 0.3,
-    sheenRoughness: 0.65,
-    sheenColor: new THREE.Color(0xffffff),
-    envMapIntensity: 0.85
+    roughness: 0.54,
+    metalness: 0.05,
+    clearcoat: 0.14,
+    clearcoatRoughness: 0.52,
+    sheen: 0.38,
+    sheenRoughness: 0.58,
+    sheenColor: new THREE.Color(0xfff5e8),
+    bumpMap: matteBump,
+    bumpScale: 0.0022,
+    envMapIntensity: 1.05
   })
 }
 
@@ -160,12 +194,14 @@ function createGlassMaterial(
   if (allowTransmission) {
     return new THREE.MeshPhysicalMaterial({
       color: tintHex,
-      transmission: 0.9,
-      thickness: 0.4,
-      ior: 1.5,
-      roughness: 0.05,
+      transmission: 0.92,
+      thickness: 0.55,
+      ior: 1.52,
+      roughness: 0.04,
       metalness: 0.0,
-      envMapIntensity: 1.15,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.04,
+      envMapIntensity: 1.3,
       transparent: true
     })
   }
@@ -174,20 +210,22 @@ function createGlassMaterial(
     color: tintHex,
     transparent: true,
     opacity: 0.35,
-    roughness: 0.06,
+    roughness: 0.05,
     metalness: 0.0,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
-    envMapIntensity: 1.15
+    clearcoatRoughness: 0.04,
+    envMapIntensity: 1.25
   })
 }
 
-function createMetalMaterial(THREE: ThreeLib, hex = 0xdadce2, roughness = 0.25): import('three').MeshPhysicalMaterial {
+function createMetalMaterial(THREE: ThreeLib, hex = 0xdadce2, roughness = 0.2): import('three').MeshPhysicalMaterial {
   return new THREE.MeshPhysicalMaterial({
     color: hex,
     metalness: 1.0,
     roughness,
-    envMapIntensity: 1.0
+    clearcoat: 0.15,
+    clearcoatRoughness: 0.25,
+    envMapIntensity: 1.25
   })
 }
 
@@ -564,22 +602,22 @@ export function buildJarMockup(
 }
 
 /**
- * 6. Pouch standing — subdivided PlaneGeometry front & back with sine bulge, crimped top/bottom, zip strip, tear notch
+ * 6. Pouch standing — high-res 48x64 realistic matte laminated foil stand-up coffee pouch (18:26 proportions)
+ *    with natural pillowy tension creases, sculpted resealable zipper, tear notches, and deep espresso gusset.
  */
 export function buildPouchMockup(
   THREE: ThreeLib,
   texture: import('three').Texture,
-  colorHex: string,
+  _colorHex: string,
   finish: FinishType
 ): MockupBuildResult {
   const group = new THREE.Group()
-  const W = 1.18
-  const H = 1.66
+  // Authentic 18cm x 26cm coffee pouch proportions
+  const W = 1.22
+  const H = 1.76
 
-  function createBulgedPouchHalf(isFront: boolean): import('three').BufferGeometry {
-    const geo = new THREE.PlaneGeometry(W, H, 28, 36)
+  function sculptPouchSurface(geo: import('three').BufferGeometry, sign: 1 | -1) {
     const pos = geo.attributes.position as import('three').BufferAttribute
-    const sign = isFront ? 1 : -1
 
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i)
@@ -587,85 +625,106 @@ export function buildPouchMockup(
       const v = (yRaw + H * 0.5) / H // 0 (bottom) .. 1 (top)
       const u = (x + W * 0.5) / W // 0 .. 1
 
-      // Slight graceful taper narrower toward top header
-      const widthScale = 1.0 - 0.05 * v + 0.03 * Math.sin(v * Math.PI)
+      // Slightly wider top heat-seal header tapering gracefully to stable stand-up base (matches commercial coffee bag)
+      const widthScale = 0.92 + 0.08 * Math.pow(v, 0.75) + 0.025 * Math.sin(v * Math.PI)
       x *= widthScale
 
-      // Tear notches on left & right heat-seal edge at v = 0.90
-      if (Math.abs(v - 0.9) < 0.016 && (u < 0.04 || u > 0.96)) {
-        x *= 0.94
+      // Subtle rounded top corners
+      if (v > 0.96 && (u < 0.04 || u > 0.96)) {
+        const cornerPull = (v - 0.96) / 0.04
+        x *= 1.0 - cornerPull * 0.018
       }
 
-      // Sine belly bulge: wide gusset near bottom-middle, pinched flat at side seams and top seal
-      const horizPinch = Math.pow(Math.sin(Math.min(1, Math.max(0, u)) * Math.PI), 0.72)
+      // Easy-tear notches on left & right heat-seal edge at v = 0.925
+      if (Math.abs(v - 0.925) < 0.014 && (u < 0.035 || u > 0.965)) {
+        x *= 0.945
+      }
+
+      // Flat perimeter heat-seal flange (4.5% on left/right, top 11%)
+      const edgeU = Math.min(1, Math.max(0, (u - 0.045) / 0.91))
+      const horizPinch = Math.pow(Math.sin(edgeU * Math.PI), 0.64)
+
       let vertBulge = 0
-      if (v < 0.85) {
-        // Plump standing bottom & mid belly tapering cleanly to zip line at v=0.85
-        vertBulge = Math.sin((v / 0.85) * Math.PI * 0.92 + 0.08)
+      if (v < 0.875) {
+        // Plump coffee-filled belly with fuller lower gusset tapering smoothly into the zipper line
+        const vt = v / 0.875
+        vertBulge = Math.pow(Math.sin(vt * Math.PI * 0.94 + 0.06), 0.85) * (1.12 - 0.24 * vt)
       }
-      // Subtle crimp rib texture on top seal band
-      const crimp = v > 0.88 ? Math.sin(v * 180) * 0.002 : 0
-      const zipBump = Math.exp(-Math.pow((v - 0.845) / 0.012, 2)) * 0.012
 
-      const z = sign * (0.008 + 0.24 * horizPinch * vertBulge + zipBump + crimp)
-      pos.setXYZ(i, x, yRaw + H * 0.5, z)
-    }
+      // Sculpted dual-ridge resealable zipper track at v = 0.882 and v = 0.896
+      const zipRidge1 = Math.exp(-Math.pow((v - 0.882) / 0.0065, 2)) * 0.014
+      const zipRidge2 = Math.exp(-Math.pow((v - 0.896) / 0.0055, 2)) * 0.009
+      const zipValley = -Math.exp(-Math.pow((v - 0.889) / 0.004, 2)) * 0.005
+      const zipProfile = (zipRidge1 + zipRidge2 + zipValley) * (u > 0.03 && u < 0.97 ? 1 : 0.2)
 
-    if (!isFront) {
-      // Flip face winding for back half
-      geo.rotateY(Math.PI)
-      // Restore X symmetry after Y flip
+      // Subtle organic foil tension creases near upper-left/right zipper corners & lower gusset corners
+      const topLeftCrease =
+        Math.exp(-Math.pow((u - 0.14) / 0.09, 2)) *
+        Math.exp(-Math.pow((v - 0.78) / 0.12, 2)) *
+        Math.sin((u * 18 - v * 14) * Math.PI * 0.6) *
+        0.011
+      const topRightCrease =
+        Math.exp(-Math.pow((u - 0.86) / 0.09, 2)) *
+        Math.exp(-Math.pow((v - 0.78) / 0.12, 2)) *
+        Math.sin(((1 - u) * 18 - v * 14) * Math.PI * 0.6) *
+        0.011
+      const lowerFold =
+        Math.exp(-Math.pow((v - 0.12) / 0.08, 2)) *
+        Math.sin(u * Math.PI * 4) *
+        horizPinch *
+        0.006
+
+      // Gentle bottom oval curve so pouch sits naturally on studio floor
+      const bottomLift = v < 0.04 ? (1 - horizPinch) * (0.04 - v) * 0.35 : 0
+
+      const z = sign * (0.006 + 0.235 * horizPinch * vertBulge + zipProfile + topLeftCrease + topRightCrease + lowerFold)
+      pos.setXYZ(i, x, yRaw + H * 0.5 + bottomLift, z)
     }
     geo.computeVertexNormals()
-    return geo
   }
 
-  const frontGeo = createBulgedPouchHalf(true)
-  // Back half built by mirroring Z & winding cleanly
-  const backGeo = new THREE.PlaneGeometry(W, H, 28, 36)
+  const frontGeo = new THREE.PlaneGeometry(W, H, 48, 64)
+  sculptPouchSurface(frontGeo, 1)
+
+  const backGeo = new THREE.PlaneGeometry(W, H, 48, 64)
   backGeo.rotateY(Math.PI)
-  {
-    const pos = backGeo.attributes.position as import('three').BufferAttribute
-    for (let i = 0; i < pos.count; i++) {
-      let x = pos.getX(i)
-      const yRaw = pos.getY(i)
-      const v = (yRaw + H * 0.5) / H
-      const u = (x + W * 0.5) / W
-      x *= 1.0 - 0.05 * v + 0.03 * Math.sin(v * Math.PI)
-      if (Math.abs(v - 0.9) < 0.016 && (u < 0.04 || u > 0.96)) x *= 0.94
-      const horizPinch = Math.pow(Math.sin(Math.min(1, Math.max(0, u)) * Math.PI), 0.72)
-      const vertBulge = v < 0.85 ? Math.sin((v / 0.85) * Math.PI * 0.92 + 0.08) : 0
-      const zipBump = Math.exp(-Math.pow((v - 0.845) / 0.012, 2)) * 0.012
-      const z = -(0.008 + 0.24 * horizPinch * vertBulge + zipBump)
-      pos.setXYZ(i, x, yRaw + H * 0.5, z)
-    }
-    backGeo.computeVertexNormals()
-  }
+  sculptPouchSurface(backGeo, -1)
 
   const labelMat = createPhysicalFinishMaterial(THREE, finish, '#FFFFFF', texture)
-  const backColor = finish === 'Kraft' ? '#C9A878' : '#EFEAE0'
+  if (finish === 'Matte') {
+    // Rich soft-touch matte laminated aluminum foil response
+    labelMat.roughness = 0.46
+    labelMat.metalness = 0.08
+    labelMat.clearcoat = 0.16
+    labelMat.clearcoatRoughness = 0.48
+    labelMat.sheen = 0.42
+    labelMat.sheenColor = new THREE.Color(0xffe9cf)
+  }
+
+  const backColor = finish === 'Kraft' ? '#C9A878' : '#35180F'
   const pouchBackMat = createPhysicalFinishMaterial(THREE, finish, backColor)
+  if (finish === 'Matte') {
+    pouchBackMat.roughness = 0.46
+    pouchBackMat.metalness = 0.08
+    pouchBackMat.clearcoat = 0.16
+    pouchBackMat.clearcoatRoughness = 0.48
+  }
 
   const frontMesh = new THREE.Mesh(frontGeo, labelMat)
   const backMesh = new THREE.Mesh(backGeo, pouchBackMat)
   enableShadows(frontMesh)
   enableShadows(backMesh)
 
-  // Bottom gusset fold seal
-  const bottomGussetGeo = new THREE.CylinderGeometry(0.16, 0.16, W * 0.82, 24, 1, false, 0, Math.PI)
+  // Realistic recessed bottom gusset fold
+  const bottomGussetGeo = new THREE.CylinderGeometry(0.19, 0.19, W * 0.8, 32, 1, false, 0, Math.PI)
   bottomGussetGeo.rotateZ(Math.PI * 0.5)
-  bottomGussetGeo.scale(1, 0.35, 1)
+  bottomGussetGeo.scale(1, 0.28, 1)
   const bottomGusset = new THREE.Mesh(bottomGussetGeo, pouchBackMat)
-  bottomGusset.position.y = 0.05
+  bottomGusset.position.y = 0.045
+  enableShadows(bottomGusset, true, true)
 
-  // Subtle accent zip strip highlight on front header
-  const zipGeo = new THREE.BoxGeometry(W * 0.88, 0.016, 0.026)
-  const zipMat = createPhysicalFinishMaterial(THREE, finish, colorHex)
-  const zipMesh = new THREE.Mesh(zipGeo, zipMat)
-  zipMesh.position.set(0, H * 0.845, 0.006)
-
-  group.add(frontMesh, backMesh, bottomGusset, zipMesh)
-  return { group, labelMaterials: [labelMat], bounds: { width: W, height: H, depth: 0.5 } }
+  group.add(frontMesh, backMesh, bottomGusset)
+  return { group, labelMaterials: [labelMat], bounds: { width: W, height: H, depth: 0.52 } }
 }
 
 /**
@@ -851,45 +910,49 @@ export function buildPaperBagMockup(
 }
 
 /**
- * 9. Kartu nama — stack of 5 thin boxes, fanned, thickness visible, front card shows logo and name
+ * 9. Kartu nama — luxury thick cotton stack (6 fanned cards + hero angled card) with champagne-gold gilt edges
  */
 export function buildCardMockup(
   THREE: ThreeLib,
   texture: import('three').Texture,
-  colorHex: string,
+  _colorHex: string,
   finish: FinishType
 ): MockupBuildResult {
   const group = new THREE.Group()
-  const cardW = 1.12
-  const cardT = 0.024
-  const cardD = 0.64
+  const cardW = 1.16
+  const cardT = 0.022
+  const cardD = 0.66
 
-  const edgeMat = createPhysicalFinishMaterial(THREE, finish, colorHex)
-  const backStockMat = createPhysicalFinishMaterial(THREE, finish, finish === 'Kraft' ? '#C9A878' : '#F6F3EC')
+  // Champagne-gold metallic gilt edges for realistic luxury business cards
+  const edgeMat =
+    finish === 'Kraft'
+      ? createPhysicalFinishMaterial(THREE, 'Kraft', '#B58F5E')
+      : createMetalMaterial(THREE, 0xd6b17a, 0.28)
+  const backStockMat = createPhysicalFinishMaterial(THREE, finish, finish === 'Kraft' ? '#C9A878' : '#35180F')
   const labelMat = createPhysicalFinishMaterial(THREE, finish, '#FFFFFF', texture)
 
   const cardMaterials = [edgeMat, edgeMat, labelMat, backStockMat, edgeMat, edgeMat]
 
-  // 4 fanned flat stacked cards with visible painted edges
-  for (let i = 0; i < 4; i++) {
+  // 5 fanned flat stacked cards with visible gilt edges
+  for (let i = 0; i < 5; i++) {
     const geo = new THREE.BoxGeometry(cardW, cardT, cardD)
     const card = new THREE.Mesh(geo, cardMaterials)
-    card.position.set(-0.06 + i * 0.03, cardT * 0.5 + i * (cardT + 0.002), -0.08 - i * 0.015)
-    card.rotation.y = -0.14 + i * 0.085
+    card.position.set(-0.08 + i * 0.028, cardT * 0.5 + i * (cardT + 0.002), -0.09 - i * 0.014)
+    card.rotation.y = -0.16 + i * 0.075
     enableShadows(card)
     group.add(card)
   }
 
-  // 5th hero presentation card propped gently against the stack so camera reads front logo & brand cleanly
+  // 6th hero presentation card propped gently against the stack so camera reads front logo & brand cleanly
   const heroGeo = new THREE.BoxGeometry(cardW, cardT, cardD)
   const heroCard = new THREE.Mesh(heroGeo, cardMaterials)
-  heroCard.position.set(0.05, 0.22, 0.18)
-  heroCard.rotation.x = 0.56
+  heroCard.position.set(0.06, 0.24, 0.19)
+  heroCard.rotation.x = 0.58
   heroCard.rotation.y = 0.12
   enableShadows(heroCard)
   group.add(heroCard)
 
-  return { group, labelMaterials: [labelMat], bounds: { width: 1.28, height: 0.42, depth: 0.95 } }
+  return { group, labelMaterials: [labelMat], bounds: { width: 1.32, height: 0.45, depth: 0.98 } }
 }
 
 /**

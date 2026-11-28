@@ -777,7 +777,7 @@ onBeforeUnmount(() => {
                   <span
                     v-if="colorHex.toLowerCase() === sw.hex.toLowerCase()"
                     class="text-[10px] font-mono font-bold"
-                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-ink' : 'text-paper'"
+                    :class="sw.hex === '#FFD84D' || sw.hex === '#22E6D0' ? 'text-[#0B0B0F]' : 'text-[#F4F1EA]'"
                     aria-hidden="true"
                   >✓</span>
                 </button>
@@ -836,7 +836,7 @@ onBeforeUnmount(() => {
                 <linearGradient id="heroFallbackCyc" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" :stop-color="currentBackdropMeta.hex" />
                   <stop offset="66%" :stop-color="currentBackdropMeta.hex" />
-                  <stop offset="78%" stop-color="#D9D3C7" />
+                  <stop offset="78%" :stop-color="currentBackdropMeta.isDark ? '#101014' : '#D9D3C7'" />
                   <stop offset="100%" :stop-color="currentBackdropMeta.hex" />
                 </linearGradient>
                 <radialGradient id="heroFallbackShadow" cx="50%" cy="50%" r="50%">
@@ -889,16 +889,28 @@ onBeforeUnmount(() => {
 
               <!-- Center Standing Pouch -->
               <g transform="translate(274, 108)">
-                <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="url(#heroFallbackPouch)" />
-                <line x1="18" y1="38" x2="194" y2="38" stroke="#D2C9BA" stroke-width="4" />
-                <rect x="28" y="64" width="156" height="224" rx="4" fill="#FAF8F3" />
-                <rect x="42" y="80" width="128" height="8" :fill="colorHex" />
-                <circle cx="106" cy="142" r="20" fill="none" stroke="#181715" stroke-width="4" stroke-dasharray="95 35" />
-                <circle cx="106" cy="142" r="6" :fill="colorHex" />
-                <text x="106" y="204" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="18" font-weight="700" fill="#181715">
+                <path d="M16,0 L196,0 L206,318 C206,332 170,338 106,338 C42,338 6,332 6,318 Z" fill="#1C1A22" />
+                <line x1="18" y1="38" x2="194" y2="38" stroke="#F4F1EA" stroke-opacity="0.22" stroke-width="3" />
+                <rect x="28" y="64" width="156" height="224" rx="6" fill="#F7F3EA" stroke="#0B0B0F" stroke-width="2" />
+                <rect x="28" y="64" width="156" height="58" rx="6" :fill="colorHex" />
+                <line x1="28" y1="122" x2="184" y2="122" stroke="#141318" stroke-width="2" />
+                <!-- Kopi Senja Setting-Sun Emblem -->
+                <g transform="translate(106, 98)">
+                  <path d="M-16 6 A16 16 0 0 1 16 6 Z" fill="#141318" />
+                  <line x1="-22" y1="6" x2="22" y2="6" stroke="#141318" stroke-width="2" stroke-linecap="round" />
+                  <line x1="-14" y1="11" x2="14" y2="11" stroke="#141318" stroke-width="1.6" stroke-linecap="round" />
+                </g>
+                <text x="106" y="142" text-anchor="middle" font-family="monospace" font-size="7.5" font-weight="700" :fill="colorHex">SINGLE ORIGIN · GAYO</text>
+                <text x="106" y="172" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="18" font-weight="700" fill="#141318">
                   {{ displayBrand }}
                 </text>
-                <text x="106" y="228" text-anchor="middle" font-family="monospace" font-size="10" fill="#57534E">PRODUK PILIHAN · 250G</text>
+                <rect x="46" y="184" width="120" height="18" rx="9" fill="#18161C" />
+                <text x="106" y="196" text-anchor="middle" font-family="monospace" font-size="7.5" font-weight="700" fill="#FFD84D">MEDIUM ROAST · ARABIKA</text>
+                <text x="106" y="226" text-anchor="middle" font-family="Inter, sans-serif" font-size="8.5" font-weight="600" fill="#18161C">Caramel · Dark Choco · Citrus</text>
+                <line x1="38" y1="246" x2="174" y2="246" stroke="#141318" stroke-width="1.2" />
+                <text x="42" y="268" font-family="monospace" font-size="8.5" font-weight="700" fill="#18161C">NETTO 250G</text>
+                <rect x="122" y="256" width="50" height="16" rx="3" fill="#22E6D0" stroke="#141318" stroke-width="1.2" />
+                <text x="147" y="267" text-anchor="middle" font-family="monospace" font-size="7.5" font-weight="700" fill="#141318">HALAL ID</text>
               </g>
             </svg>
           </div>
