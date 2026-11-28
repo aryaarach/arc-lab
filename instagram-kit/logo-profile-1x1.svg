@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080" role="img" aria-label="Arc Lab Instagram Profile Logo">
+  <defs>
+    <pattern id="labGrid" width="54" height="54" patternUnits="userSpaceOnUse">
+      <path d="M 54 0 L 0 0 0 54" fill="none" stroke="#0B0B0F" stroke-opacity="0.07" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <!-- Warm Paper Background + Subtle Neo-Brutalist Lab Grid -->
+  <rect width="1080" height="1080" fill="#F4F1EA"/>
+  <rect width="1080" height="1080" fill="url(#labGrid)"/>
+
+  <!-- Subtle Lab Registration Accents (outside circle crop, visible on square view) -->
+  <g stroke="#0B0B0F" stroke-width="4" stroke-opacity="0.22" fill="none">
+    <path d="M56 108 V56 H108"/>
+    <path d="M1024 108 V56 H972"/>
+    <path d="M56 972 V1024 H108"/>
+    <path d="M1024 972 V1024 H972"/>
+  </g>
+
+  <!-- Main Neo-Brutalist Icon Box (Centered inside Instagram Circular Safe Zone) -->
+  <!-- Hard Shadow -->
+  <rect x="336" y="198" width="436" height="436" rx="88" fill="#0B0B0F"/>
+  <!-- Yellow Box -->
+  <rect x="314" y="176" width="436" height="436" rx="88" fill="#FFD84D" stroke="#0B0B0F" stroke-width="16"/>
+
+  <!-- Floating Cyan Studio Spark Pill (Top-Right of Icon Box, inside safe circle) -->
+  <rect x="646" y="150" width="144" height="58" rx="14" fill="#0B0B0F"/>
+  <rect x="638" y="142" width="144" height="58" rx="14" fill="#22E6D0" stroke="#0B0B0F" stroke-width="8"/>
+  <text x="710" y="180" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="26" font-weight="800" fill="#0B0B0F">STD</text>
+
+  <!-- Signature Open Arc + Electric Indigo Focus Dot -->
+  <path d="M424 488 A148 148 0 1 1 640 488" fill="none" stroke="#0B0B0F" stroke-width="48" stroke-linecap="round"/>
+  <circle cx="532" cy="398" r="48" fill="#5B5BFF" stroke="#0B0B0F" stroke-width="14"/>
+
+  <!-- Wordmark Brutalist Plate (Fits cleanly inside Instagram Circular Safe Zone) -->
+  <rect x="234" y="676" width="628" height="148" rx="22" fill="#0B0B0F"/>
+  <rect x="218" y="660" width="628" height="148" rx="22" fill="#FFFFFF" stroke="#0B0B0F" stroke-width="12"/>
+  <text x="514" y="762" text-anchor="middle" font-family="'Space Grotesk', 'Inter', sans-serif" font-size="92" font-weight="700" letter-spacing="-3" fill="#0B0B0F">ARC<tspan fill="#5B5BFF">LAB</tspan></text>
+  <circle cx="784" cy="750" r="16" fill="#FF6B4A" stroke="#0B0B0F" stroke-width="7"/>
+
+  <!-- Bottom Tiny Mono Sub-tag inside safe circle -->
+  <rect x="360" y="846" width="360" height="50" rx="10" fill="#22E6D0" stroke="#0B0B0F" stroke-width="6"/>
+  <text x="540" y="880" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="23" font-weight="700" letter-spacing="1.5" fill="#0B0B0F">DESAIN UMKM · 3D</text>
+</svg>

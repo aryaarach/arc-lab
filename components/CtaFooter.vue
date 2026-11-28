@@ -9,7 +9,7 @@ const waFooterUrl = computed(() => {
 })
 
 const instagramUrl = computed(() => {
-  const cleanHandle = String(config.instagramHandle || '@arclab.studio').replace(/^@/, '')
+  const cleanHandle = String(config.instagramHandle || '@arclab_std').replace(/^@/, '')
   return `https://instagram.com/${cleanHandle}`
 })
 </script>
