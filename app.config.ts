@@ -1,7 +1,7 @@
 export default defineAppConfig({
   studioName: 'Arc Lab',
-  whatsappNumber: '6281234567890',
+  whatsappNumber: '6285156038071',
   instagramHandle: '@arclab_std',
   email: 'halo@arclab.studio',
-  location: 'Bandung & Jakarta · 100% Online se-Indonesia'
+  location: 'Gading Serpong, Tangerang · 100% Online se-Indonesia'
 })
