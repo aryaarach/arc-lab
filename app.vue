@@ -34,9 +34,10 @@ useHead({
       Lewati ke konten utama
     </a>
 
-    <!-- Custom Desktop Ring Cursor (Hidden on touch devices) -->
+    <!-- Custom Desktop Ring Cursor (Hidden on touch devices) & Ambient Flying Airplane -->
     <ClientOnly>
       <ArcCursor />
+      <FlyingAirplane />
     </ClientOnly>
 
     <!-- Sticky Neo-Brutalist Navigation -->
